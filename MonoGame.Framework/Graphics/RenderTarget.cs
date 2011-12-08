@@ -53,8 +53,8 @@ namespace Microsoft.Xna.Framework.Graphics
 		{
 			
 		}
-		
-		SurfaceFormat _Format;
+
+        SurfaceFormat _Format = SurfaceFormat.Unknown;
 		public SurfaceFormat Format 
 		{ 
 			get

@@ -1,4 +1,4 @@
-﻿#region License
+#region License
 /*
 Microsoft Public License (Ms-PL)
 XnaTouch - Copyright © 2009 The XnaTouch Team
@@ -40,8 +40,8 @@ purpose and non-infringement.
 
 #region Using Statements
 using System;
-using System.ComponentModel;
 using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework.Graphics;
 using OpenTK;
 using OpenTK.Graphics;
 using System.Collections.Generic;
@@ -450,8 +450,9 @@ namespace Microsoft.Xna.Framework
 		private Rectangle clientBounds;
 		private GameTime _updateGameTime;
         private GameTime _drawGameTime;
-        private DateTime _lastUpdate;
-		private DateTime _now;
+        private TimeSpan _lastUpdateTime;
+        private TimeSpan _lastDrawTime;
+		private TimeSpan _now;
         private static List<Microsoft.Xna.Framework.Input.Keys> keys = new List<Input.Keys>();
 
         public static List<Microsoft.Xna.Framework.Input.Keys> Keys
@@ -472,33 +473,30 @@ namespace Microsoft.Xna.Framework
 
         private void Initialize()
         {
-            OpenTkGameWindow = new OpenTK.GameWindow();            
+            OpenTkGameWindow = new OpenTK.GameWindow();
             OpenTkGameWindow.RenderFrame += OnRenderFrame;
             OpenTkGameWindow.UpdateFrame += OnUpdateFrame;
-            OpenTkGameWindow.Closing += new EventHandler<CancelEventArgs>(OpenTkGameWindow_Closing);
             OpenTkGameWindow.Resize += OnResize;
             OpenTkGameWindow.Keyboard.KeyDown += new EventHandler<OpenTK.Input.KeyboardKeyEventArgs>(Keyboard_KeyDown);
             OpenTkGameWindow.Keyboard.KeyUp += new EventHandler<OpenTK.Input.KeyboardKeyEventArgs>(Keyboard_KeyUp);
             clientBounds = new Rectangle(0, 0, OpenTkGameWindow.Width, OpenTkGameWindow.Height);
-			
-			// mouse
-			// TODO review this when opentk 1.1 is released
-			Mouse.UpdateMouseInfo(OpenTkGameWindow.Mouse);
 
             // Initialize GameTime
             _updateGameTime = new GameTime();
             _drawGameTime = new GameTime();
 
             // Initialize _lastUpdate
-            _lastUpdate = DateTime.Now;
+            _now = TimeSpan.Zero;
+            _lastUpdateTime = TimeSpan.Zero;
+            _lastDrawTime = TimeSpan.Zero;
 
             //Default no resizing
             AllowUserResizing = false;
         }
 
-        void OpenTkGameWindow_Closing(object sender,CancelEventArgs e)
-        {        	
-        	Game.Exit();
+        internal void Dispose()
+        {
+            OpenTkGameWindow.Dispose();
         }
 
         void Keyboard_KeyUp(object sender, OpenTK.Input.KeyboardKeyEventArgs e)
@@ -511,18 +509,14 @@ namespace Microsoft.Xna.Framework
             if (!keys.Contains(e.Key.ToXna())) keys.Add(e.Key.ToXna());
         }
 
-        // This method should only be called when necessary like when the Guide is displayed
-        internal void ClearKeyCacheState()
-        {
-            keys.Clear();
-        }
-
         
         #region GameWindow Methods
 
         private void OnResize(object sender, EventArgs e)
         {
             Game.GraphicsDevice.SizeChanged(OpenTkGameWindow.ClientRectangle.Width, OpenTkGameWindow.ClientRectangle.Height);
+            System.Drawing.Rectangle r = OpenTkGameWindow.Bounds;
+            clientBounds = new Rectangle(r.X, r.Y, r.Width, r.Height);
             OnClientSizeChanged();
         }
 
@@ -536,10 +530,18 @@ namespace Microsoft.Xna.Framework
                 OpenTkGameWindow.MakeCurrent();
 
             if (Game != null) {
-                _drawGameTime.Update(_now - _lastUpdate);
-                _lastUpdate = _now;
+                _drawGameTime.Update(_now - _lastDrawTime);
+                _lastDrawTime = _now;
                 Game.DoDraw(_drawGameTime);
             }
+            // GG EDIT flush to clear out buffers
+#if FALSE
+#if NACL
+            OpenTK.Graphics.ES20.GL.Finish();
+#else
+            OpenTK.Graphics.OpenGL.GL.Flush();
+#endif
+#endif
 
             OpenTkGameWindow.SwapBuffers();
         }
@@ -550,15 +552,22 @@ namespace Microsoft.Xna.Framework
 			  
                 HandleInput();
 
-                _now = DateTime.Now;
-				_updateGameTime.Update(_now - _lastUpdate);
+                _now += TimeSpan.FromSeconds( e.Time );
+				_updateGameTime.Update(_now - _lastUpdateTime);
+                _lastUpdateTime = _now;
             	Game.DoUpdate(_updateGameTime);
 			}
 		}
 
         private void HandleInput()
         {
-			// mouse doesn't need to be treated here, Mouse class does it alone
+            // GG TODO
+            //bool b = OpenTkGameWindow.Mouse[OpenTK.Input.MouseButton.Left];
+            Mouse.SetPosition(OpenTkGameWindow.Mouse.X,
+                              OpenTkGameWindow.Mouse.Y,
+                              OpenTkGameWindow.Mouse[OpenTK.Input.MouseButton.Left],
+                              OpenTkGameWindow.Mouse[OpenTK.Input.MouseButton.Middle],
+                              OpenTkGameWindow.Mouse[OpenTK.Input.MouseButton.Right]);  
         }
 		
 		#endregion

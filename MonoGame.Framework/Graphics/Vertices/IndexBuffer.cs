@@ -2,10 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using GL11 = OpenTK.Graphics.ES11.GL;
-using GL20 = OpenTK.Graphics.ES20.GL;
-using All11 = OpenTK.Graphics.ES11.All;
-using All20 = OpenTK.Graphics.ES20.All;
+#if NACL
+using GL = OpenTK.Graphics.ES20.GL;
+using All = OpenTK.Graphics.ES20.All;
+#else
+using GL = OpenTK.Graphics.ES11.GL;
+using All = OpenTK.Graphics.ES11.All;
+#endif
+
 using System.Runtime.InteropServices;
 
 namespace Microsoft.Xna.Framework.Graphics
@@ -17,7 +21,7 @@ namespace Microsoft.Xna.Framework.Graphics
         internal int _count;
 		private object _buffer;
 		internal IntPtr _bufferPtr;
-		internal IntPtr _sizePtr;
+		internal IntPtr _sizePtr = default(IntPtr);
         private BufferUsage _bufferUsage;
 		internal static IndexBuffer[] _allBuffers = new IndexBuffer[50];
 		internal static int _bufferCount = 0;
@@ -47,10 +51,12 @@ namespace Microsoft.Xna.Framework.Graphics
         
 		internal void GenerateBuffer<T>() where T : struct
 		{
-            All11 bufferUsage = (_bufferUsage == BufferUsage.WriteOnly) ? All11.StaticDraw : All11.DynamicDraw;
-            GL11.GenBuffers(1, ref _bufferStore);
-            GL11.BindBuffer(All11.ElementArrayBuffer, _bufferStore);
-            GL11.BufferData<T>(All11.ElementArrayBuffer, (IntPtr)_size, (T[])_buffer, bufferUsage);			
+            // GG TODO commented this out to do NACL, should uncomment and fix
+            //All bufferUsage = (_bufferUsage == BufferUsage.WriteOnly) ? All.StaticDraw : All.DynamicDraw;
+            _bufferStore += 1; // disable unused variable warning
+            //GL.GenBuffers(1, ref _bufferStore);
+            //GL.BindBuffer(All.ElementArrayBuffer, _bufferStore);
+            //GL.BufferData<T>(All.ElementArrayBuffer, (IntPtr)_size, (T[])_buffer, bufferUsage);			
 		}
 		
 		public void SetData<T>(T[] indicesData) where T : struct
@@ -66,7 +72,8 @@ namespace Microsoft.Xna.Framework.Graphics
 		
 		public void Dispose ()
 		{
-			GL11.GenBuffers(0, ref _bufferStore);
+            // GG TODO commented this out to do NACL, should uncomment and fix
+			//GL.GenBuffers(0, ref _bufferStore);
 		}		
     }
 

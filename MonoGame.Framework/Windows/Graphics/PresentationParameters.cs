@@ -65,9 +65,6 @@ namespace Microsoft.Xna.Framework.Graphics
         private MultiSampleType multiSampleType;
         private SwapEffect swapEffect;
         private bool disposed;
-        private DepthFormat depthStencilFormat;
-        private int multiSampleCount;
-        
 
         #endregion Private Fields
 
@@ -165,19 +162,6 @@ namespace Microsoft.Xna.Framework.Graphics
 		}
 		
 		public RenderTargetUsage RenderTargetUsage { get; set; }
-        
-        public DepthFormat DepthStencilFormat
-        {
-            get { return depthStencilFormat; }
-            set { depthStencilFormat = value; }
-        }
-
-        public int MultiSampleCount
-        {
-            get { return multiSampleCount; }
-            set { multiSampleCount = value; }
-        }
-        
 
         #endregion Properties
 
@@ -186,7 +170,7 @@ namespace Microsoft.Xna.Framework.Graphics
 
         public void Clear()
         {
-            autoDepthStencilFormat = DepthFormat.None;
+            autoDepthStencilFormat = DepthFormat.Unknown;
             backBufferCount = 0;
             backBufferFormat = SurfaceFormat.Color;
 			backBufferWidth = 320;
@@ -194,8 +178,6 @@ namespace Microsoft.Xna.Framework.Graphics
             deviceWindowHandle = IntPtr.Zero;
             enableAutoDepthStencil = false;
             fullScreenRefreshRateInHz = 0;
-            depthStencilFormat = DepthFormat.None;
-            multiSampleCount = 0;
             // isFullScreen = false;
             multiSampleQuality = 0;
             multiSampleType = MultiSampleType.None;
@@ -219,8 +201,6 @@ namespace Microsoft.Xna.Framework.Graphics
             clone.multiSampleQuality = this.multiSampleQuality;
             clone.multiSampleType = this.multiSampleType;
             clone.swapEffect = this.swapEffect;
-            clone.depthStencilFormat = this.depthStencilFormat;
-            clone.multiSampleCount = this.multiSampleCount;
             return clone;
         }
 
@@ -245,7 +225,5 @@ namespace Microsoft.Xna.Framework.Graphics
 
         #endregion Methods
 
-
-        
     }
 }

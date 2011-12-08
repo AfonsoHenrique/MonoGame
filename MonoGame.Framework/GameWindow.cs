@@ -8,9 +8,9 @@ namespace Microsoft.Xna.Framework
 {
     public abstract class GameWindow
     {
-        public event EventHandler<EventArgs> ClientSizeChanged;
-        public event EventHandler<EventArgs> OrientationChanged;
-        public event EventHandler<EventArgs> ScreenDeviceNameChanged;
+        public event EventHandler ClientSizeChanged;
+        public event EventHandler OrientationChanged;
+        public event EventHandler ScreenDeviceNameChanged;
 
         public abstract void BeginScreenDeviceChange(bool willBeFullScreen);
         public abstract void EndScreenDeviceChange(string screenDeviceName, int clientWidth, int clientHeight);

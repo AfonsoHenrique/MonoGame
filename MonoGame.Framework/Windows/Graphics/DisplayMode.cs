@@ -39,6 +39,7 @@ purpose and non-infringement.
 #endregion License
 
 using System;
+using OpenTK;
 
 namespace Microsoft.Xna.Framework.Graphics
 {
@@ -46,11 +47,20 @@ namespace Microsoft.Xna.Framework.Graphics
     {
         private int _width;
         private int _height;
+        private DisplayDevice _device;
+
+        internal DisplayMode(DisplayDevice dd)
+        {
+            _device = dd;
+            _width = -1;
+            _height = -1;
+        }
 
         internal DisplayMode(int width, int height)
         {
             _width = width;
             _height = height;
+            _device = null;
         }
        
         public float AspectRatio
@@ -61,9 +71,37 @@ namespace Microsoft.Xna.Framework.Graphics
             }
         }
 
-        public int Width { get { return _width; } }
+        public int Width 
+        {
+            get
+            {
+                if (_device != null)
+                {
+                    return _device.Width;
+                }
+                return _width;
+            }
+        }
 
-        public int Height { get { return _height; } }
-        
+        public int Height
+        {
+            get
+            {
+                if (_device != null)
+                {
+                    return _device.Height;
+                }
+                return _height;
+            }
+        }
+
+
+        public SurfaceFormat Format
+        {
+            // GG EDIT
+            get { return SurfaceFormat.Color; }
+            set { }
+        }
+
     }
 }

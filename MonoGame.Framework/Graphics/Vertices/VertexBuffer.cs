@@ -4,12 +4,15 @@ using System.Linq;
 using System.Text;
 using System.Runtime.InteropServices;
 
+#if NACL
 using OpenTK.Graphics.ES20;
+using GL = OpenTK.Graphics.ES20.GL;
+using All = OpenTK.Graphics.ES20.All;
+#else
 using OpenTK.Graphics.ES11;
-using GL11 = OpenTK.Graphics.ES11.GL;
-using GL20 = OpenTK.Graphics.ES20.GL;
-using All11 = OpenTK.Graphics.ES11.All;
-using All20 = OpenTK.Graphics.ES20.All;
+using GL = OpenTK.Graphics.ES11.GL;
+using All = OpenTK.Graphics.ES11.All;
+#endif
 
 namespace Microsoft.Xna.Framework.Graphics
 {
@@ -28,6 +31,14 @@ namespace Microsoft.Xna.Framework.Graphics
 		// allow for 50 buffers initially
 		internal static VertexBuffer[] _allBuffers = new VertexBuffer[50];
 		internal static List<Action> _delayedBufferDelegates = new List<Action>();
+
+        public VertexBuffer(GraphicsDevice graphicsDevice, int sizeInBytes, BufferUsage usage)
+        {
+            // GG EDIT
+            this.Graphics = graphicsDevice;
+            this._size = sizeInBytes;
+            this._bufferUsage = usage;
+        }
 
         public VertexBuffer(GraphicsDevice Graphics, Type type, int vertexCount, BufferUsage bufferUsage)
         {
@@ -53,11 +64,13 @@ namespace Microsoft.Xna.Framework.Graphics
 			
 			_size = vd.VertexStride * ((T[])_buffer).Length;
 			
-            All11 bufferUsage = (_bufferUsage == BufferUsage.WriteOnly) ? All11.StaticDraw : All11.DynamicDraw;
+            // GG TODO commented this out to do NACL, should uncomment and fix
+            //All bufferUsage = (_bufferUsage == BufferUsage.WriteOnly) ? All.StaticDraw : All.DynamicDraw;
 			
-            GL11.GenBuffers(1, ref _bufferStore);
-            GL11.BindBuffer(All11.ArrayBuffer, _bufferStore);
-            GL11.BufferData<T>(All11.ArrayBuffer, (IntPtr)_size, (T[])_buffer, bufferUsage);			
+            _bufferStore += 1; // disable unused variable warning
+            //GL.GenBuffers(1, ref _bufferStore);
+            //GL.BindBuffer(All.ArrayBuffer, _bufferStore);
+            //GL.BufferData<T>(All.ArrayBuffer, (IntPtr)_size, (T[])_buffer, bufferUsage);			
 		}
 		
         public unsafe void GetData<T>(T[] vertices) where T : IVertexType
@@ -90,7 +103,8 @@ namespace Microsoft.Xna.Framework.Graphics
 		
 		public void Dispose ()
 		{
-			GL11.GenBuffers(0, ref _bufferStore);
+            // GG TODO commented this out to do NACL, should uncomment and fix
+			//GL.GenBuffers(0, ref _bufferStore);
 		}
     }
 	

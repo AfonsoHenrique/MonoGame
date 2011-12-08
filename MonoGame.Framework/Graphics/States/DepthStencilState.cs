@@ -24,8 +24,6 @@ namespace Microsoft.Xna.Framework.Graphics
 		{
             DepthBufferEnable = true;
             DepthBufferWriteEnable = true;
-			StencilMask = Int32.MaxValue;
-			StencilWriteMask = Int32.MaxValue;
 		}
 		
 		static DepthStencilState defaultState;

@@ -1,4 +1,4 @@
-﻿#region License
+#region License
 /*
 Microsoft Public License (Ms-PL)
 MonoGame - Copyright © 2009 The MonoGame Team
@@ -38,11 +38,11 @@ purpose and non-infringement.
 */
 #endregion License
 
-﻿using System;
+using System;
 
 namespace Microsoft.Xna.Framework.GamerServices
 {
-    public abstract class Gamer
+    public class Gamer
     {
         static SignedInGamerCollection _signedInGamers = new SignedInGamerCollection();
         string _gamer = "MonoGame";
@@ -74,9 +74,9 @@ namespace Microsoft.Xna.Framework.GamerServices
 		{
 			if (disposing) {
 				_isDisposed = true;
-				/*foreach (var gamer in _signedInGamers) {
+				foreach (var gamer in _signedInGamers) {
 					gamer.Dispose();
-				}*/
+				}
 			}
 		}
 		

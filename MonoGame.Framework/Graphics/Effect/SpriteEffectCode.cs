@@ -3,9 +3,9 @@ using System.Text;
 
 namespace Microsoft.Xna.Framework.Graphics
 {
-	internal static class SpriteEffectCode
+	public static class SpriteEffectCode
 	{
-		internal static string SpriteEffectFragmentCode() {
+		public static string SpriteEffectFragmentCode() {
 			
 			StringBuilder sb = new StringBuilder();
 			sb.Append("uniform sampler2D tex;\n");

@@ -39,7 +39,6 @@
 // #endregion License
 // 
 using System;
-using System.Linq;
 
 namespace Microsoft.Xna.Framework.Input
 {
@@ -78,16 +77,25 @@ namespace Microsoft.Xna.Framework.Input
 		public bool IsKeyDown (Keys key)
 		{
 			if (_keys != null) {
-				return _keys.Contains(key);
+				foreach (Keys kkey in _keys) {
+
+					if (kkey == key) {
+						return true;
+					}
+				}
 			}
 			return false;
 		}
 
 		public bool IsKeyUp (Keys key)
 		{
-			if (_keys != null) 
-			{
-				return !_keys.Contains(key);
+			if (_keys != null) {
+				foreach (Keys kkey in _keys) {
+
+					if (kkey == key) {
+						return false;
+					}
+				}
 			}
 			return true;
 		}
@@ -102,8 +110,7 @@ namespace Microsoft.Xna.Framework.Input
 		}
 
 		#endregion
-		
-		#region Operator overloads
+
 		public static bool operator == (KeyboardState first, KeyboardState second)
 		{
 			return first.GetHashCode() == second.GetHashCode();
@@ -113,6 +120,6 @@ namespace Microsoft.Xna.Framework.Input
 		{
 			return first.GetHashCode() != second.GetHashCode();
 		}
-		#endregion
+
 	}
 }

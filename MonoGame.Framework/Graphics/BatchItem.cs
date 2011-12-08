@@ -16,6 +16,8 @@ namespace Microsoft.Xna.Framework.Graphics
 			vctTR = new VertexColorTexture();
 			vctBL = new VertexColorTexture();
 			vctBR = new VertexColorTexture();
+            TextureID = 0;
+            Depth = 0;
 		}
 	}
 }

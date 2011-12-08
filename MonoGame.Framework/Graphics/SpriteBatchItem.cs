@@ -4,6 +4,8 @@ namespace Microsoft.Xna.Framework.Graphics
 {
 	internal class SpriteBatchItem
 	{
+        //GG EDIT
+        public Effect effect;
 		public int TextureID;
 		public float Depth;
 		public VertexPosition2ColorTexture vertexTL;
@@ -13,63 +15,53 @@ namespace Microsoft.Xna.Framework.Graphics
 		public SpriteBatchItem ()
 		{
 			vertexTL = new VertexPosition2ColorTexture();
-            vertexTR = new VertexPosition2ColorTexture();
-            vertexBL = new VertexPosition2ColorTexture();
-            vertexBR = new VertexPosition2ColorTexture();            
+			vertexTR = new VertexPosition2ColorTexture();
+			vertexBL = new VertexPosition2ColorTexture();
+			vertexBR = new VertexPosition2ColorTexture();
 		}
 		
 		public void Set ( float x, float y, float w, float h, Color color, Vector2 texCoordTL, Vector2 texCoordBR )
 		{
-			vertexTL.Position.X = x;
-            vertexTL.Position.Y = y;
+			vertexTL.Position = new Vector2(x,y);
 			vertexTL.Color = color.GLPackedValue;
-			vertexTL.TextureCoordinate.X = texCoordTL.X;
-            vertexTL.TextureCoordinate.Y = texCoordTL.Y;
+			vertexTL.TextureCoordinate = texCoordTL;
 
-			vertexTR.Position.X = x+w;
-            vertexTR.Position.Y = y;
+			vertexTR.Position = new Vector2(x+w,y);
 			vertexTR.Color = color.GLPackedValue;
-            vertexTR.TextureCoordinate.X = texCoordBR.X;
-            vertexTR.TextureCoordinate.Y = texCoordTL.Y;
+			vertexTR.TextureCoordinate = new Vector2(texCoordBR.X,texCoordTL.Y);
 
-			vertexBL.Position.X = x;
-            vertexBL.Position.Y = y+h;
+			vertexBL.Position = new Vector2(x,y+h);
 			vertexBL.Color = color.GLPackedValue;
-			vertexBL.TextureCoordinate.X = texCoordTL.X;
-            vertexBL.TextureCoordinate.Y = texCoordBR.Y;
+			vertexBL.TextureCoordinate = new Vector2(texCoordTL.X,texCoordBR.Y);
 
-			vertexBR.Position.X = x+w;
-            vertexBR.Position.Y = y+h;
+			vertexBR.Position = new Vector2(x+w,y+h);
 			vertexBR.Color = color.GLPackedValue;
-			vertexBR.TextureCoordinate.X = texCoordBR.X;
-            vertexBR.TextureCoordinate.Y = texCoordBR.Y;
+			vertexBR.TextureCoordinate = texCoordBR;
+
+            //effect = Effect.currentEffect;
+
 		}
 		public void Set ( float x, float y, float dx, float dy, float w, float h, float sin, float cos, Color color, Vector2 texCoordTL, Vector2 texCoordBR )
 		{
-			vertexTL.Position.X = x+dx*cos-dy*sin;
-            vertexTL.Position.Y = y+dx*sin+dy*cos;
+			vertexTL.Position = new Vector2(x+dx*cos-dy*sin,y+dx*sin+dy*cos);
 			vertexTL.Color = color.GLPackedValue;
-            vertexTL.TextureCoordinate.X = texCoordTL.X;
-            vertexTL.TextureCoordinate.Y = texCoordTL.Y;
+			vertexTL.TextureCoordinate = texCoordTL;
 
-			vertexTR.Position.X = x+(dx+w)*cos-dy*sin;
-            vertexTR.Position.Y = y+(dx+w)*sin+dy*cos;
+			vertexTR.Position = new Vector2(x+(dx+w)*cos-dy*sin,y+(dx+w)*sin+dy*cos);
 			vertexTR.Color = color.GLPackedValue;
-            vertexTR.TextureCoordinate.X = texCoordBR.X;
-            vertexTR.TextureCoordinate.Y = texCoordTL.Y;
+			vertexTR.TextureCoordinate = new Vector2(texCoordBR.X,texCoordTL.Y);
 
-			vertexBL.Position.X = x+dx*cos-(dy+h)*sin;
-            vertexBL.Position.Y = y+dx*sin+(dy+h)*cos;
+			vertexBL.Position = new Vector2(x+dx*cos-(dy+h)*sin,y+dx*sin+(dy+h)*cos);
 			vertexBL.Color = color.GLPackedValue;
-            vertexBL.TextureCoordinate.X = texCoordTL.X;
-            vertexBL.TextureCoordinate.Y = texCoordBR.Y;
+			vertexBL.TextureCoordinate = new Vector2(texCoordTL.X,texCoordBR.Y);
 
-			vertexBR.Position.X = x+(dx+w)*cos-(dy+h)*sin;
-            vertexBR.Position.Y = y+(dx+w)*sin+(dy+h)*cos;
+			vertexBR.Position = new Vector2(x+(dx+w)*cos-(dy+h)*sin,y+(dx+w)*sin+(dy+h)*cos);
 			vertexBR.Color = color.GLPackedValue;
-            vertexBR.TextureCoordinate.X = texCoordBR.X;
-            vertexBR.TextureCoordinate.Y = texCoordBR.Y;
+			vertexBR.TextureCoordinate = texCoordBR;
+
+            //effect = Effect.currentEffect;
 		}
+
 	}
 }
 

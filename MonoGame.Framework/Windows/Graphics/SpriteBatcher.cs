@@ -41,158 +41,285 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
+#if NACL
+using OpenTK.Graphics.ES20;
+#else
 using OpenTK.Graphics.OpenGL;
+#endif
 
 using Microsoft.Xna.Framework;
 
 namespace Microsoft.Xna.Framework.Graphics
 {
-	internal class SpriteBatcher
-	{	    
-		List<SpriteBatchItem> _batchItemList;
-		Queue<SpriteBatchItem> _freeBatchItemQueue;
-		VertexPosition2ColorTexture[] _vertexArray;
-		ushort[] _index;
-		GCHandle _vertexHandle;
-		GCHandle _indexHandle;
+    internal class FrameStats
+    {
+        internal static long rects = 0;
+        internal static int batches = 0;
+        internal static int draws = 0;
+        internal static int textures = 0;
+
+        internal static void startFrame()
+        {
+            rects = batches = draws = textures = 0;
+        }
+
+        internal static void printStats()
+        {
+            NaCl.Debug.print(String.Format("Frame Stats: rects {0} draws {1} textures {2} batches {3} rects/draw {4} rects/batch {5}", rects, draws, textures, batches, draws == 0 ? 0 : rects / draws, batches == 0 ? 0 : rects / batches));
+        }
+    }
+
+    internal class SpriteBatcher
+    {
+        public static GraphicsDevice _graphicsDevice = null;
+        List<SpriteBatchItem> _batchItemList;
+        Queue<SpriteBatchItem> _freeBatchItemQueue;
+        VertexPosition2ColorTexture[] _vertexArray;
+        GCHandle _vertexHandle;
+        Int32 _vertexVbo;
+
+        static bool isDrawingBatch = false;
+
+        static int sNumIndices = 0;
+        static ushort[] sIndices;
+        static GCHandle sIndexHandle;
+        static Int32 sIndexVbo = -1;
+        static Int32 sCurrentVbo = -1;
+
+        static void ensureIndexCapacity(int indices)
+        {
+            if (indices > 65532 * 6 / 4)
+                throw new ArgumentException("Too many indices");
+            if (sNumIndices >= indices)
+                return;
+            if (sNumIndices == 0) // special case: starting condition
+                sNumIndices = 128 * 6; // should always be a multiple of 6
+            if (sIndexVbo == -1) // starting condition
+                GL.GenBuffers(1, out sIndexVbo);
+            while (indices > sNumIndices)
+                sNumIndices *= 2;
+            if (sNumIndices > 65532 * 6 / 4)
+                sNumIndices = 65532 * 6 / 4;  // can have more indices than 65536, but can only address vertex 65532
+            if (sIndexHandle.IsAllocated)
+                sIndexHandle.Free();
+            sIndices = new ushort[sNumIndices];
+            sIndexHandle = GCHandle.Alloc(sIndices, GCHandleType.Pinned);
+            for (int i = 0; i < sNumIndices / 6; i++)
+            {
+                sIndices[i * 6 + 0] = (ushort)(i * 4);
+                sIndices[i * 6 + 1] = (ushort)(i * 4 + 1);
+                sIndices[i * 6 + 2] = (ushort)(i * 4 + 2);
+                sIndices[i * 6 + 3] = (ushort)(i * 4 + 1);
+                sIndices[i * 6 + 4] = (ushort)(i * 4 + 3);
+                sIndices[i * 6 + 5] = (ushort)(i * 4 + 2);
+            }
+
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, sIndexVbo);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, (IntPtr)(sNumIndices * sizeof(ushort)), sIndexHandle.AddrOfPinnedObject(),
+#if NACL
+ OpenTK.Graphics.ES20.BufferUsage.StaticDraw);
+#else
+                BufferUsageHint.StaticDraw);
+#endif
+        }
+
+        public static void startFrame()
+        {
+            if (sIndexVbo != -1) // make sure it's been initialized
+                GL.BindBuffer(BufferTarget.ElementArrayBuffer, sIndexVbo);
+            sCurrentVbo = -1; // force at least one BindBuffer
+            //FrameStats.printStats();
+            FrameStats.startFrame();
+        }
 
         public SpriteBatcher()
         {
-            _batchItemList = new List<SpriteBatchItem>(256);
-            _freeBatchItemQueue = new Queue<SpriteBatchItem>(256);
+            int initialRects = 256;
+            _batchItemList = new List<SpriteBatchItem>(initialRects);
+            _freeBatchItemQueue = new Queue<SpriteBatchItem>(initialRects);
 
-            _vertexArray = new VertexPosition2ColorTexture[4 * 256];
-            _index = new ushort[6 * 256];
+            _vertexArray = new VertexPosition2ColorTexture[4 * initialRects];
             _vertexHandle = GCHandle.Alloc(_vertexArray, GCHandleType.Pinned);
-            _indexHandle = GCHandle.Alloc(_index, GCHandleType.Pinned);
+            GL.GenBuffers(1, out _vertexVbo);
+            ensureIndexCapacity(6 * initialRects);
+        }
 
-            for (int i = 0; i < 256; i++)
+        public SpriteBatchItem CreateBatchItem()
+        {
+            SpriteBatchItem item;
+            if (_freeBatchItemQueue.Count > 0)
+                item = _freeBatchItemQueue.Dequeue();
+            else
+                item = new SpriteBatchItem();
+            _batchItemList.Add(item);
+            return item;
+        }
+        int CompareTexture(SpriteBatchItem a, SpriteBatchItem b)
+        {
+            return a.TextureID.CompareTo(b.TextureID);
+        }
+        int CompareDepth(SpriteBatchItem a, SpriteBatchItem b)
+        {
+            return a.Depth.CompareTo(b.Depth);
+        }
+        int CompareReverseDepth(SpriteBatchItem a, SpriteBatchItem b)
+        {
+            return b.Depth.CompareTo(a.Depth);
+        }
+        public void DrawBatch(SpriteSortMode sortMode)
+        {
+            if (_batchItemList.Count == 0)
+                return; // nothing to do
+
+            if (isDrawingBatch)
+                NaCl.Debug.print("double drawing batch!!!!!");
+            isDrawingBatch = true;
+
+            FrameStats.rects += _batchItemList.Count;
+            FrameStats.batches++;
+
+            // sort the batch items
+            switch (sortMode)
             {
-                _index[i * 6 + 0] = (ushort)(i * 4);
-                _index[i * 6 + 1] = (ushort)(i * 4 + 1);
-                _index[i * 6 + 2] = (ushort)(i * 4 + 2);
-                _index[i * 6 + 3] = (ushort)(i * 4 + 1);
-                _index[i * 6 + 4] = (ushort)(i * 4 + 3);
-                _index[i * 6 + 5] = (ushort)(i * 4 + 2);
+                case SpriteSortMode.Texture:
+                    _batchItemList.Sort(CompareTexture);
+                    break;
+                case SpriteSortMode.FrontToBack:
+                    _batchItemList.Sort(CompareDepth);
+                    break;
+                case SpriteSortMode.BackToFront:
+                    _batchItemList.Sort(CompareReverseDepth);
+                    break;
+            }
+
+            int vsize = Marshal.SizeOf(typeof(VertexPosition2ColorTexture));
+
+            // setup the vertexArray array
+            int startIndex = 0;
+            int index = 0;
+            int texID = -1;
+            bool first = true;
+            Effect effect = null;
+
+            // make sure the vertexArray has enough space
+            if (_batchItemList.Count * 4 > _vertexArray.Length)
+                ExpandVertexArray(_batchItemList.Count);
+
+            // build up the vertex array from SpriteBatchItems
+            foreach (SpriteBatchItem item in _batchItemList)
+            {
+                _vertexArray[index++] = item.vertexTL;
+                _vertexArray[index++] = item.vertexTR;
+                _vertexArray[index++] = item.vertexBL;
+                _vertexArray[index++] = item.vertexBR;
+            }
+
+            if (sCurrentVbo != _vertexVbo)
+            {
+                GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexVbo);
+                sCurrentVbo = _vertexVbo;
+            }
+            // start transferring bytes to the renderer
+            GL.BufferData(BufferTarget.ArrayBuffer, (IntPtr)(vsize * _batchItemList.Count * 4),
+                _vertexHandle.AddrOfPinnedObject(),
+#if NACL
+ OpenTK.Graphics.ES20.BufferUsage.DynamicDraw);
+#else
+                BufferUsageHint.DynamicDraw);
+#endif
+
+            index = 0;
+            foreach (SpriteBatchItem item in _batchItemList)
+            {
+                // need to switch shaders if that's different between items
+                if (first || item.effect != effect)
+                {
+                    first = false;
+                    FlushVertexArray(startIndex, index);
+
+                    startIndex = index;
+                    effect = item.effect;
+                    GL.UseProgram(effect.program_handle);
+
+                    // GG TODO: all of the following only need to happen once per program, not every draw
+                    // vertex data
+                    GL.VertexAttribPointer(effect.position_index,
+                        2, VertexAttribPointerType.Float, false, vsize, 0);
+                    GL.EnableVertexAttribArray(effect.position_index);
+
+                    // color data
+                    if (effect.color_index >= 0)
+                    {
+                        // note that this is normalized because it's stored as bytes
+                        GL.VertexAttribPointer(effect.color_index,
+                            4, VertexAttribPointerType.UnsignedByte, true, vsize, (IntPtr)(sizeof(float) * 2));
+                        GL.EnableVertexAttribArray(effect.color_index);
+                    }
+
+                    // texcoord data
+                    if (effect.texCoord_index >= 0)
+                    {
+                        GL.VertexAttribPointer(effect.texCoord_index,
+                            2, VertexAttribPointerType.Float, false, vsize, (IntPtr)(sizeof(float) * 2 + sizeof(uint)));
+                        GL.EnableVertexAttribArray(effect.texCoord_index);
+                    }
+
+                    // pass along the matrices as uniforms
+                    GL.UniformMatrix4(effect.Parameters["u_projection"].internalIndex,
+                        false, ref GLStateManager.Projection);
+                    GL.UniformMatrix4(effect.Parameters["u_modelview"].internalIndex,
+                        false, ref GLStateManager.ModelView);
+                }
+
+                // if the texture changed, we need to flush and bind the new texture
+                if (item.TextureID != texID && effect.texture_locations.Length > 0)
+                {
+                    FlushVertexArray(startIndex, index);
+                    FrameStats.textures++;
+                    startIndex = index;
+                    texID = item.TextureID;
+                    GL.ActiveTexture(TextureUnit.Texture0);
+                    GL.BindTexture(TextureTarget.Texture2D, texID);
+                    GL.Uniform1(effect.texture_locations[0], 0);
+                }
+                index += 4;
+
+                _freeBatchItemQueue.Enqueue(item);
+            }
+            // flush the remaining vertexArray data
+            FlushVertexArray(startIndex, index);
+
+            _batchItemList.Clear();
+
+            _graphicsDevice.RenderState.SourceBlend = (Blend)BlendingFactorSrc.SrcAlpha;
+            _graphicsDevice.RenderState.DestinationBlend = (Blend)BlendingFactorDest.OneMinusSrcAlpha;
+            isDrawingBatch = false;
+        }
+
+        void FlushVertexArray(int start, int end)
+        {
+            // draw stuff
+            if (start != end)
+            {
+                FrameStats.draws++;
+                // assumes GL.BindBuffer already called for indices and vertices
+                GL.DrawElements(BeginMode.Triangles, (end - start) * 6 / 4, DrawElementsType.UnsignedShort, start * 6 / 4 * sizeof(ushort));
             }
         }
 
-		public SpriteBatchItem CreateBatchItem()
-		{
-			SpriteBatchItem item;
-			if ( _freeBatchItemQueue.Count > 0 )
-				item = _freeBatchItemQueue.Dequeue();
-			else
-				item = new SpriteBatchItem();
-			_batchItemList.Add(item);
-			return item;
-		}
-		int CompareTexture ( SpriteBatchItem a, SpriteBatchItem b )
-		{
-			return a.TextureID.CompareTo(b.TextureID);
-		}
-		int CompareDepth ( SpriteBatchItem a, SpriteBatchItem b )
-		{
-			return a.Depth.CompareTo(b.Depth);
-		}
-		int CompareReverseDepth ( SpriteBatchItem a, SpriteBatchItem b )
-		{
-			return b.Depth.CompareTo(a.Depth);
-		}
-        public void DrawBatch(SpriteSortMode sortMode, SamplerState samplerState)
-		{
-			// nothing to do
-			if ( _batchItemList.Count == 0 )
-				return;
-			
-			// sort the batch items
-			switch ( sortMode )
-			{
-			case SpriteSortMode.Texture :
-				_batchItemList.Sort( CompareTexture );
-				break;
-			case SpriteSortMode.FrontToBack :
-				_batchItemList.Sort ( CompareDepth );
-				break;
-			case SpriteSortMode.BackToFront :
-				_batchItemList.Sort ( CompareReverseDepth );
-				break;
-			}
-			
-			// make sure an old draw isn't still going on.
-			// cross fingers, commenting this out!!
-			//GL.Flush();
-			
-			int size = sizeof(float)*4+sizeof(uint);
-			GL.VertexPointer(2, VertexPointerType.Float,size,_vertexHandle.AddrOfPinnedObject() );
-			GL.ColorPointer(4, ColorPointerType.UnsignedByte,size,(IntPtr)((uint)_vertexHandle.AddrOfPinnedObject()+(uint)(sizeof(float)*2)));
-			GL.TexCoordPointer(2, TexCoordPointerType.Float,size,(IntPtr)((uint)_vertexHandle.AddrOfPinnedObject()+(uint)(sizeof(float)*2+sizeof(uint))) );
+        void ExpandVertexArray(int batchSize)
+        {
+            // increase the size of the vertexArray
+            int newCount = _vertexArray.Length / 4;
 
-			// setup the vertexArray array
-			int startIndex = 0;
-			int index = 0;
-			int texID = -1;
+            while (batchSize * 4 > newCount)
+                newCount += 128;
 
-			// make sure the vertexArray has enough space
-			if ( _batchItemList.Count*4 > _vertexArray.Length )
-				ExpandVertexArray( _batchItemList.Count );
-			
-			foreach ( SpriteBatchItem item in _batchItemList )
-			{
-				// if the texture changed, we need to flush and bind the new texture
-				if ( item.TextureID != texID )
-				{
-					FlushVertexArray( startIndex, index );
-					startIndex = index;
-					texID = item.TextureID;
-					GL.BindTexture ( TextureTarget.Texture2D, texID );
-                    samplerState.Activate();
-				}
-				// store the SpriteBatchItem data in our vertexArray
-				_vertexArray[index++] = item.vertexTL;
-				_vertexArray[index++] = item.vertexTR;
-				_vertexArray[index++] = item.vertexBL;
-				_vertexArray[index++] = item.vertexBR;
-				
-				_freeBatchItemQueue.Enqueue ( item );
-			}
-			// flush the remaining vertexArray data
-			FlushVertexArray(startIndex, index);
-			
-			_batchItemList.Clear();
-		}
-		void ExpandVertexArray( int batchSize )
-		{
-			// increase the size of the vertexArray
-			int newCount = _vertexArray.Length / 4;
-			
-			while ( batchSize*4 > newCount )
-				newCount += 128;
-			
-			_vertexHandle.Free();
-			_indexHandle.Free();
-			
-			_vertexArray = new VertexPosition2ColorTexture[4*newCount];
-			_index = new ushort[6*newCount];
-			_vertexHandle = GCHandle.Alloc(_vertexArray,GCHandleType.Pinned);
-			_indexHandle = GCHandle.Alloc(_index,GCHandleType.Pinned);
-			
-			for ( int i = 0; i < newCount; i++ )
-			{
-				_index[i*6+0] = (ushort)(i*4);
-				_index[i*6+1] = (ushort)(i*4+1);
-				_index[i*6+2] = (ushort)(i*4+2);
-				_index[i*6+3] = (ushort)(i*4+1);
-				_index[i*6+4] = (ushort)(i*4+3);
-				_index[i*6+5] = (ushort)(i*4+2);
-			}
-		}
-		void FlushVertexArray ( int start, int end )
-		{
-			// draw stuff
-			if ( start != end )
-				GL.DrawElements ( BeginMode.Triangles, (end-start)/2*3, DrawElementsType.UnsignedShort,(IntPtr)((uint)_indexHandle.AddrOfPinnedObject()+(uint)(start/2*3*sizeof(short))) );
-		}
-	}
+            _vertexHandle.Free();
+            _vertexArray = new VertexPosition2ColorTexture[4 * newCount];
+            _vertexHandle = GCHandle.Alloc(_vertexArray, GCHandleType.Pinned);
+            ensureIndexCapacity(6 * newCount);
+        }
+    }
 }
 

@@ -1,4 +1,4 @@
-﻿#region License
+#region License
 /*
 Microsoft Public License (Ms-PL)
 MonoGame - Copyright © 2009 The MonoGame Team
@@ -40,23 +40,30 @@ purpose and non-infringement.
 
 using System;
 
+#if NACL
+using OpenTK.Graphics.ES20;
+#else
 using OpenTK.Graphics.OpenGL;
+#endif
 
 using Microsoft.Xna.Framework;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 
 namespace Microsoft.Xna.Framework.Graphics
-{	
+{
     public class GraphicsDevice : IDisposable
     {
-		private All _preferedFilter;
-		private int _activeTexture = -1;
-		private Viewport _viewport;
-		private bool _isDisposed = false;
-		private DisplayMode _displayMode;
-		private RenderState _renderState;
+        private All _preferedFilter;
+        private int _activeTexture = -1;
+        private Viewport _viewport;
+        private bool _isDisposed = false;
+        private DisplayMode _displayMode;
+        private RenderState _renderState;
         internal GraphicsDeviceManager mngr;
+
+        public DepthStencilBuffer DepthStencilBuffer;//GG TODO
+        public VertexStreamCollection Vertices;//GG TODO
 
         private BlendState _blendState = BlendState.Opaque;
         private DepthStencilState _depthStencilState = DepthStencilState.Default;
@@ -64,44 +71,56 @@ namespace Microsoft.Xna.Framework.Graphics
         internal List<IntPtr> _pointerCache = new List<IntPtr>();
         private VertexBuffer _vertexBuffer = null;
         private IndexBuffer _indexBuffer = null;
-        public TextureCollection Textures { get; set; }
+        private RenderTarget2D _renderTarget = null;
 
-        private RenderTargetBinding[] currentRenderTargets;        
-        
-        public RasterizerState RasterizerState { get; set; }        
+        // GG EDIT added
+        internal Effect _defaultEffect;
 
-		internal All PreferedFilter 
-		{
-			get 
-			{
-				return _preferedFilter;
-			}
-			set 
-			{
-				_preferedFilter = value;
-			}
-		
-		}
-		
-		internal int ActiveTexture
-		{
-			get 
-			{
-				return _activeTexture;
-			}
-			set 
-			{
-				_activeTexture = value;
-			}
-		}
-		
-		public bool IsDisposed 
-		{ 
-			get
-			{
-				return _isDisposed;
-			}
-		}
+        //GG EDIT. instantiate texturecoll
+        public TextureCollection Textures = new TextureCollection();
+
+        public RasterizerState RasterizerState { get; set; }
+
+        internal All PreferedFilter
+        {
+            get
+            {
+                return _preferedFilter;
+            }
+            set
+            {
+                _preferedFilter = value;
+            }
+
+        }
+
+        internal int ActiveTexture
+        {
+            get
+            {
+                return _activeTexture;
+            }
+            set
+            {
+                _activeTexture = value;
+            }
+        }
+
+        public bool IsDisposed
+        {
+            get
+            {
+                return _isDisposed;
+            }
+        }
+
+        public RenderTarget2D RenderTarget
+        {
+            get
+            {
+                return _renderTarget;
+            }
+        }
 
         public bool IsContentLost
         {
@@ -113,31 +132,19 @@ namespace Microsoft.Xna.Framework.Graphics
             }
         }
 
-        public GraphicsDevice()
-        {
-            // Initialize the main viewport
-            _viewport = new Viewport();
-            _viewport.X = 0;
-            _viewport.Y = 0;
-            _viewport.Width = DisplayMode.Width;
-            _viewport.Height = DisplayMode.Height;
-			_viewport.MinDepth = 0.0f;
-			_viewport.MaxDepth = 1.0f;
-            Textures = new TextureCollection();
-
-            // Init RenderState
-            RasterizerState = new RasterizerState();
-        }
-
         internal GraphicsDevice(GraphicsDeviceManager mngr)
         {
             this.mngr = mngr;
             _displayMode = new DisplayMode(this.mngr.PreferredBackBufferWidth, this.mngr.PreferredBackBufferHeight);
-            Textures = new TextureCollection();
+
             // Init RenderState
             _renderState = new RenderState();
 
             SizeChanged(this.mngr.PreferredBackBufferWidth, this.mngr.PreferredBackBufferHeight);
+            
+            // GG EDIT
+            _defaultEffect = new Effect("DEFAULT_EFFECT", GGShader.DEFAULT_FRAGMENT, this);
+            Effect.currentEffect = _defaultEffect;
         }
 
         internal void SizeChanged(int width, int height)
@@ -149,9 +156,10 @@ namespace Microsoft.Xna.Framework.Graphics
             _viewport.X = 0;
             _viewport.Y = 0;
             _viewport.Width = DisplayMode.Width;
-            _viewport.Height = DisplayMode.Height;            
+            _viewport.Height = DisplayMode.Height;
 
-            if (PresentationParameters != null) {
+            if (PresentationParameters != null)
+            {
                 PresentationParameters.BackBufferWidth = width;
                 PresentationParameters.BackBufferHeight = height;
             }
@@ -159,7 +167,9 @@ namespace Microsoft.Xna.Framework.Graphics
 
         public BlendState BlendState
         {
-            get { return _blendState; }
+            get {
+                return _blendState;
+            }
             set
             {
                 // ToDo check for invalid state
@@ -188,73 +198,85 @@ namespace Microsoft.Xna.Framework.Graphics
         public void Clear(Color color)
         {
             Vector4 vector = color.ToEAGLColor();
-            // The following was not working with Color.Transparent
-            // Once we get some regression tests take the following out			
-            //GL.ClearColor (vector.X, vector.Y, vector.Z, 1.0f);
-            GL.ClearColor(vector.X, vector.Y, vector.Z, vector.W);
+            GL.ClearColor(vector.X, vector.Y, vector.Z, 1.0f);
             GL.Clear(ClearBufferMask.ColorBufferBit);
         }
 
+        //GG EDIT IMPLEMENTED
         public void Clear(ClearOptions options, Color color, float depth, int stencil)
         {
-            Clear(options, color.ToEAGLColor(), depth, stencil);
+            Vector4 vector = color.ToEAGLColor();
+            GL.ClearColor(vector.X, vector.Y, vector.Z, 1.0f);
+
+            switch (options)
+            {
+                case ClearOptions.DepthBuffer:
+                    GL.ClearDepth(depth);
+                    GL.Clear(ClearBufferMask.DepthBufferBit);
+                    break;
+
+                case ClearOptions.Stencil:
+                    GL.ClearStencil(stencil);
+                    GL.Clear(ClearBufferMask.StencilBufferBit);
+                    break;
+
+                case ClearOptions.Target:
+                    throw new NotImplementedException();
+            }
         }
 
         public void Clear(ClearOptions options, Vector4 color, float depth, int stencil)
         {
-            GL.ClearColor(color.X, color.Y, color.Z, color.W);
-            GL.ClearDepth(depth);
-            GL.ClearStencil(stencil);
-            GL.Clear((ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit));
+            throw new NotImplementedException();
         }
 
         public void Clear(ClearOptions options, Color color, float depth, int stencil, Rectangle[] regions)
         {
-			throw new NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public void Clear(ClearOptions options, Vector4 color, float depth, int stencil, Rectangle[] regions)
         {
-			throw new NotImplementedException();
+            throw new NotImplementedException();
         }
 
-		public void Dispose()
-		{
-			_isDisposed = true;
-		}
-		
-		protected virtual void Dispose(bool aReleaseEverything)
-		{
-			if (aReleaseEverything)
-			{
-				
-			}
-			
-			_isDisposed = true;
-		}
-		
+        public void Dispose()
+        {
+            _isDisposed = true;
+        }
+
+        protected virtual void Dispose(bool aReleaseEverything)
+        {
+            if (aReleaseEverything)
+            {
+
+            }
+
+            _isDisposed = true;
+        }
+
         public void Present()
         {
         }
-		
+
         public void Present(Rectangle? sourceRectangle, Rectangle? destinationRectangle, IntPtr overrideWindowHandle)
         {
-  			throw new NotImplementedException();
-		}
-				
+            throw new NotImplementedException();
+        }
+
         public void Reset()
         {
-			throw new NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public void Reset(Microsoft.Xna.Framework.Graphics.PresentationParameters presentationParameters)
         {
-			throw new NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public void Reset(Microsoft.Xna.Framework.Graphics.PresentationParameters presentationParameters, GraphicsAdapter graphicsAdapter)
         {
-			throw new NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public Microsoft.Xna.Framework.Graphics.DisplayMode DisplayMode
@@ -284,93 +306,124 @@ namespace Microsoft.Xna.Framework.Graphics
         public Microsoft.Xna.Framework.Graphics.PresentationParameters PresentationParameters
         {
             get;
-			set;
+            set;
         }
 
         public Microsoft.Xna.Framework.Graphics.Viewport Viewport
         {
             get
             {
-				return _viewport;
-			}
-			set
-			{
-				_viewport = value;
-			}
-		}	
-		
-		public Microsoft.Xna.Framework.Graphics.GraphicsProfile GraphicsProfile 
-		{ 
-			get; 
-			set;
-		}
-		
-		public VertexDeclaration VertexDeclaration 
-		{ 
-			get; 
-			set; 
-		}
-		
-		Rectangle _scissorRectangle;
-		public Rectangle ScissorRectangle 
-		{ 
-			get
-			{
-				return _scissorRectangle;
-			}
-			set
-			{
-				_scissorRectangle = value;
-				
-				switch (this.PresentationParameters.DisplayOrientation )
-				{
-					case DisplayOrientation.Portrait :
-					{	
-						_scissorRectangle.Y = _viewport.Height - _scissorRectangle.Y - _scissorRectangle.Height;
-						break;
-					}
-					
-					case DisplayOrientation.LandscapeLeft :
-					{		
-						var x = _scissorRectangle.X;
-						_scissorRectangle.X = _viewport.Width - _scissorRectangle.Height - _scissorRectangle.Y;
-						_scissorRectangle.Y = _viewport.Height - _scissorRectangle.Width - x;
-					
-						// Swap Width and Height
-						var w = _scissorRectangle.Width;
-						_scissorRectangle.Width = _scissorRectangle.Height;
-						_scissorRectangle.Height = w;	
-						break;
-					}
-					
-					case DisplayOrientation.LandscapeRight :
-					{			
-						var x = _scissorRectangle.X;
-						_scissorRectangle.X = _scissorRectangle.Y;
-						_scissorRectangle.Y = x;
-						var w = _scissorRectangle.Width;
-						_scissorRectangle.Width = _scissorRectangle.Height;
-						_scissorRectangle.Height = w;
-						break;
-					}					
-					
-					case DisplayOrientation.PortraitUpsideDown :
-					{		
-						_scissorRectangle.Y = _scissorRectangle.X;
-						_scissorRectangle.X = _viewport.Width - _scissorRectangle.X - _scissorRectangle.Width;
-						break;
-					}
-					
-					case DisplayOrientation.Default :
-					{
-						_scissorRectangle.Y = _viewport.Height - _scissorRectangle.Y - _scissorRectangle.Height;
-						break;
-					}
-				}
-			}
-		}
-				
-		public BeginMode PrimitiveTypeGL11(PrimitiveType primitiveType)
+                return _viewport;
+            }
+            set
+            {
+                _viewport = value;
+            }
+        }
+
+        public Microsoft.Xna.Framework.Graphics.GraphicsProfile GraphicsProfile
+        {
+            get;
+            set;
+        }
+
+        public VertexDeclaration VertexDeclaration
+        {
+            get;
+            set;
+        }
+
+        Rectangle _scissorRectangle;
+        public Rectangle ScissorRectangle
+        {
+            get
+            {
+                return _scissorRectangle;
+            }
+            set
+            {
+                _scissorRectangle = value;
+
+                switch (this.PresentationParameters.DisplayOrientation)
+                {
+                    case DisplayOrientation.Portrait:
+                        {
+                            _scissorRectangle.Y = _viewport.Height - _scissorRectangle.Y - _scissorRectangle.Height;
+                            break;
+                        }
+
+                    case DisplayOrientation.LandscapeLeft:
+                        {
+                            var x = _scissorRectangle.X;
+                            _scissorRectangle.X = _viewport.Width - _scissorRectangle.Height - _scissorRectangle.Y;
+                            _scissorRectangle.Y = _viewport.Height - _scissorRectangle.Width - x;
+
+                            // Swap Width and Height
+                            var w = _scissorRectangle.Width;
+                            _scissorRectangle.Width = _scissorRectangle.Height;
+                            _scissorRectangle.Height = w;
+                            break;
+                        }
+
+                    case DisplayOrientation.LandscapeRight:
+                        {
+                            var x = _scissorRectangle.X;
+                            _scissorRectangle.X = _scissorRectangle.Y;
+                            _scissorRectangle.Y = x;
+                            var w = _scissorRectangle.Width;
+                            _scissorRectangle.Width = _scissorRectangle.Height;
+                            _scissorRectangle.Height = w;
+                            break;
+                        }
+
+                    case DisplayOrientation.PortraitUpsideDown:
+                        {
+                            _scissorRectangle.Y = _scissorRectangle.X;
+                            _scissorRectangle.X = _viewport.Width - _scissorRectangle.X - _scissorRectangle.Width;
+                            break;
+                        }
+
+                    case DisplayOrientation.Default:
+                        {
+                            _scissorRectangle.Y = _viewport.Height - _scissorRectangle.Y - _scissorRectangle.Height;
+                            break;
+                        }
+                }
+            }
+        }
+
+        public RenderState RenderState
+        {
+            get
+            {
+                return _renderState;
+            }
+            set
+            {
+                if (_renderState != value)
+                {
+                    _renderState = value;
+                }
+            }
+        }
+
+        public void SetRenderTarget(
+         int renderTargetIndex,
+         RenderTarget2D renderTarget
+                                     )
+        {
+            //GG EDIT
+            if (renderTarget != null)
+            {
+                _renderTarget = renderTarget;
+                GL.BindFramebuffer(FramebufferTarget.Framebuffer, renderTarget.framebufferID);
+            } else {
+                _renderTarget = null;
+                GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            }
+        }
+
+        public BeginMode PrimitiveTypeGL(PrimitiveType primitiveType)
         {
             switch (primitiveType)
             {
@@ -390,13 +443,15 @@ namespace Microsoft.Xna.Framework.Graphics
         public void SetVertexBuffer(VertexBuffer vertexBuffer)
         {
             _vertexBuffer = vertexBuffer;
-            GL.BindBuffer(BufferTarget.ArrayBuffer, vertexBuffer._bufferStore);
+            // GG TODO do we need this?
+            //GL.BindBuffer(BufferTarget.ArrayBuffer, vertexBuffer._bufferStore);
         }
 
         private void SetIndexBuffer(IndexBuffer indexBuffer)
         {
             _indexBuffer = indexBuffer;
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, indexBuffer._bufferStore);
+            // GG TODO do we need this?
+            //GL.BindBuffer(BufferTarget.ElementArrayBuffer, indexBuffer._bufferStore);
         }
 
         public IndexBuffer Indices { set { SetIndexBuffer(value); } }
@@ -408,16 +463,17 @@ namespace Microsoft.Xna.Framework.Graphics
 
             var vd = VertexDeclaration.FromType(_vertexBuffer._type);
             // Hmm, can the pointer here be changed with baseVertex?
-            VertexDeclaration.PrepareForUse(vd);
+            VertexDeclaration.PrepareForUse(vd, IntPtr.Zero);
 
-            GL.DrawElements(PrimitiveTypeGL11(primitiveType), _indexBuffer._count, DrawElementsType.UnsignedShort, startIndex);
+            GL.DrawElements(PrimitiveTypeGL(primitiveType), _indexBuffer._count, DrawElementsType.UnsignedShort, startIndex);
         }
 
-        public void DrawUserPrimitives<T>(PrimitiveType primitiveType, T[] vertexData, int vertexOffset, int primitiveCount) where T : struct, IVertexType
+        public void DrawUserPrimitives<T>(PrimitiveType primitiveType, T[] vertexData, int vertexOffset, int primitiveCount) where T : struct//, IVertexType GG TODO
         {
             // Unbind the VBOs
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+            // GG TODO do we need this?
+            //GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            //GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
 
             var vd = VertexDeclaration.FromType(typeof(T));
 
@@ -426,17 +482,17 @@ namespace Microsoft.Xna.Framework.Graphics
             if (vertexOffset > 0)
                 arrayStart = new IntPtr(arrayStart.ToInt32() + (vertexOffset * vd.VertexStride));
 
-            VertexDeclaration.PrepareForUse(vd);
+            VertexDeclaration.PrepareForUse(vd, arrayStart);
 
-            GL.DrawArrays(PrimitiveTypeGL11(primitiveType), vertexOffset, getElementCountArray(primitiveType, primitiveCount));
+            GL.DrawArrays(PrimitiveTypeGL(primitiveType), vertexOffset, getElementCountArray(primitiveType, primitiveCount));
         }
 
         public void DrawPrimitives(PrimitiveType primitiveType, int vertexStart, int primitiveCount)
         {
             var vd = VertexDeclaration.FromType(_vertexBuffer._type);
-            VertexDeclaration.PrepareForUse(vd);
+            VertexDeclaration.PrepareForUse(vd, IntPtr.Zero);
 
-            GL.DrawArrays(PrimitiveTypeGL11(primitiveType), vertexStart, getElementCountArray(primitiveType, primitiveCount));
+            GL.DrawArrays(PrimitiveTypeGL(primitiveType), vertexStart, getElementCountArray(primitiveType, primitiveCount));
         }
 
         public void DrawUserIndexedPrimitives<T>(PrimitiveType primitiveType, T[] vertexData, int vertexOffset, int vertexCount, int[] indexData, int indexOffset, int primitiveCount) where T : IVertexType
@@ -447,17 +503,18 @@ namespace Microsoft.Xna.Framework.Graphics
                 throw new NotImplementedException("vertexOffset and indexOffset is not yet supported.");
 
             // Unload the VBOs
-            GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
+            // GG TODO do we need this?
+            //GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
+            //GL.BindBuffer(BufferTarget.ElementArrayBuffer, 0);
 
             var vd = VertexDeclaration.FromType(typeof(T));
 
             IntPtr arrayStart = GCHandle.Alloc(vertexData, GCHandleType.Pinned).AddrOfPinnedObject();
             if (vertexOffset > 0)
                 arrayStart = new IntPtr(arrayStart.ToInt32() + vertexOffset);
-            VertexDeclaration.PrepareForUse(vd);
+            VertexDeclaration.PrepareForUse(vd, arrayStart);
 
-            GL.DrawElements(PrimitiveTypeGL11(primitiveType), vertexCount, DrawElementsType.UnsignedShort, indexData);
+            GL.DrawElements(PrimitiveTypeGL(primitiveType), vertexCount, DrawElementsType.UnsignedShort, indexData);
         }
 
         public int getElementCountArray(PrimitiveType primitiveType, int primitiveCount)
@@ -478,71 +535,31 @@ namespace Microsoft.Xna.Framework.Graphics
             throw new NotSupportedException();
         }
 
-        public void SetRenderTarget(RenderTarget2D renderTarget)
+        public void DrawUserIndexedPrimitives<T>(
+            PrimitiveType primitiveType,
+            T[] vertexData,
+            int vertexOffset,
+            int numVertices,
+            short[] indexData,
+            int indexOffset,
+            int primitiveCount
+            )
         {
-            if (renderTarget == null) 
-			{
-				// Detach the render buffers.
-				GL.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, RenderbufferTarget.Renderbuffer, 0);
-				// delete the RBO's
-				GL.DeleteRenderbuffers(renderBufferIDs.Length,renderBufferIDs);
-				// delete the FBO
-				GL.DeleteFramebuffers(1, ref framebufferId);
-				// Set the frame buffer back to the system window buffer
-				GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-			}
-			else {
-				SetRenderTargets(new RenderTargetBinding(renderTarget));
-			}
+            // TODO
         }
-        
-        private int framebufferId = -1;
-		int[] renderBufferIDs;
-		
-		public void SetRenderTargets (params RenderTargetBinding[] renderTargets) 
-		{
-			
-			currentRenderTargets = renderTargets;
-			
-			if (currentRenderTargets != null) {
-				
-				// http://www.songho.ca/opengl/gl_fbo.html
-				
-				// create framebuffer
-				GL.GenFramebuffers(1, out framebufferId);
-				GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebufferId);
-				
-				renderBufferIDs = new int[currentRenderTargets.Length];
-				GL.GenRenderbuffers(currentRenderTargets.Length, renderBufferIDs);
-				
-				for (int i = 0; i < currentRenderTargets.Length; i++) {
-					RenderTarget2D target = (RenderTarget2D)currentRenderTargets[0].RenderTarget;
-					
-					// attach the texture to FBO color attachment point
-					GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0,
-					                        TextureTarget.Texture2D, (int)target.ID,0);
-					
-					// create a renderbuffer object to store depth info
-					GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, renderBufferIDs[i]);
-					GL.RenderbufferStorage(RenderbufferTarget.Renderbuffer, RenderbufferStorage.DepthComponent24,
-						target.Width, target.Height);
-					GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, renderBufferIDs[i]);
-					
-					// attach the renderbuffer to depth attachment point
-					GL.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment
-					                           , RenderbufferTarget.Renderbuffer, renderBufferIDs[i]);
-						
-				}
-				
-				FramebufferErrorCode status = GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer);
-				
-				if (status != FramebufferErrorCode.FramebufferComplete)
-					throw new Exception("Error creating framebuffer: " + status);				
-				
-			}
-			
-			
-		}
+
+        public void ResolveBackBuffer(ResolveTexture2D resolveTarget)
+        {
+            GL.BindTexture(TextureTarget.Texture2D, resolveTarget.ID);
+            GL.CopyTexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, 0, 0, resolveTarget.Width, resolveTarget.Height);
+        }
+
+        // events
+        public event EventHandler DeviceReset
+        {
+            add { }
+            remove { }
+        }
     }
 }
 

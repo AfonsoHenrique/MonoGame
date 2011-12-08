@@ -39,15 +39,12 @@ purpose and non-infringement.
 #endregion License
    
 using System;
-using System.IO;
-using OpenTK.Graphics;
+using NaCl.PLFS;
 
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework.Input.Touch;
-using System.Threading;
-using OpenTK;
 
 namespace Microsoft.Xna.Framework
 {
@@ -66,9 +63,9 @@ namespace Microsoft.Xna.Framework
         private ContentManager _content;
         private WindowsGameWindow _view;
 		private bool _isFixedTimeStep = true;
-        private TimeSpan _targetElapsedTime = TimeSpan.FromSeconds(1 / FramesPerSecond);
-
-        private IGraphicsDeviceManager _graphicsDeviceManager;
+        private TimeSpan _targetElapsedTime = TimeSpan.FromSeconds(1 / FramesPerSecond); 
+        
+		internal IGraphicsDeviceManager graphicsDeviceManager;
         internal IGraphicsDeviceService graphicsDeviceService;
         private bool _devicesLoaded;
 
@@ -86,8 +83,8 @@ namespace Microsoft.Xna.Framework
 			_services = new GameServiceContainer();
 			_gameComponentCollection = new GameComponentCollection();
 
-            _view = new WindowsGameWindow();            
-			_view.Game = this;			
+            _view = new WindowsGameWindow();
+			_view.Game = this;
 					
 			// Initialize GameTime
             _updateGameTime = new GameTime();
@@ -102,6 +99,7 @@ namespace Microsoft.Xna.Framework
 		public void Dispose ()
 		{
 			// do nothing
+            _view.Dispose();
 		}
 
     
@@ -150,27 +148,7 @@ namespace Microsoft.Xna.Framework
         public void Run()
     	{			
 			_lastUpdate = DateTime.Now;
-
-            // In an original XNA game the GraphicsDevice property is null during initialization
-            // but before the Game's Initialize method is called the property is available so we can
-            // only assume that it should be created somewhere in here.  We can not set the viewport 
-            // values correctly based on the Preferred settings which is causing some problems on some
-            // Microsoft samples which we are not handling correctly.
-
-            graphicsDeviceManager.CreateDevice();
-
-            var manager = Services.GetService(typeof(IGraphicsDeviceManager)) as GraphicsDeviceManager;
-
-            Microsoft.Xna.Framework.Graphics.Viewport _vp =
-            new Microsoft.Xna.Framework.Graphics.Viewport();
-
-            _vp.X = 0;
-            _vp.Y = 0;
-            _vp.Width = manager.PreferredBackBufferWidth;
-            _vp.Height = manager.PreferredBackBufferHeight;
-
-            GraphicsDevice.Viewport = _vp;
-
+			
             //Need to execute this on the rendering thread
             _view.OpenTkGameWindow.RenderFrame += delegate
             {
@@ -181,7 +159,24 @@ namespace Microsoft.Xna.Framework
                 }
             };
 
-            _view.OpenTkGameWindow.Run(FramesPerSecond / (FramesPerSecond * TargetElapsedTime.TotalSeconds));	
+            _view.OpenTkGameWindow.Run( FramesPerSecond );	
+            //_view.OpenTkGameWindow.Run( FramesPerSecond / ( FramesPerSecond * TargetElapsedTime.TotalSeconds ), FramesPerSecond / ( FramesPerSecond * TargetElapsedTime.TotalSeconds ) );	
+        }
+
+        public void RunSlice()
+        {
+            _view.OpenTkGameWindow.RunSlice();
+        }
+
+        public void RedrawFrame()
+        {
+            if (_view != null && _view.OpenTkGameWindow != null)
+                _view.OpenTkGameWindow.RedrawFrame();
+        }
+
+        public void Tick()
+        {
+            RunSlice();
         }
 		
 		internal void DoUpdate(GameTime aGameTime)
@@ -200,17 +195,11 @@ namespace Microsoft.Xna.Framework
             if (!_devicesLoaded)
                 return;
 
-			if (_isActive)
+            // GG EDIT
+			if (_isActive && _initialized)
 			{
-                // Ok Based on these two messages the Draw and EndDraw should not be called
-                // if BeginDraw returns false.
-                // http://stackoverflow.com/questions/4054936/manual-control-over-when-to-redraw-the-screen/4057180#4057180
-                // http://stackoverflow.com/questions/4235439/xna-3-1-to-4-0-requires-constant-redraw-or-will-display-a-purple-screen 
-                if (BeginDraw())
-                {
-                    Draw(aGameTime);
-                    EndDraw();
-                }
+				SpriteBatcher.startFrame();
+				Draw(aGameTime);
 			}
 		}
 		
@@ -272,24 +261,12 @@ namespace Microsoft.Xna.Framework
                 }
                 return _content;
             }
-        }
-
-        private GraphicsDeviceManager graphicsDeviceManager
-        {
-            get
+            set
             {
-                if (this._graphicsDeviceManager == null)
-                {
-                    this._graphicsDeviceManager = this.Services.GetService(typeof(IGraphicsDeviceManager)) as IGraphicsDeviceManager;
-                    if (this._graphicsDeviceManager == null)
-                    {
-                        throw new InvalidOperationException("No Graphics Device Manager");
-                    }
-                }
-                return (GraphicsDeviceManager)this._graphicsDeviceManager;
+                //GG EDIT
+                _content = value;
             }
         }
-		
 
         public GraphicsDevice GraphicsDevice
         {
@@ -368,45 +345,52 @@ namespace Microsoft.Xna.Framework
 		
         protected virtual void Initialize()
         {
+			this.graphicsDeviceManager = this.Services.GetService(typeof(IGraphicsDeviceManager)) as IGraphicsDeviceManager;			
 			this.graphicsDeviceService = this.Services.GetService(typeof(IGraphicsDeviceService)) as IGraphicsDeviceService;			
 
 			if ((this.graphicsDeviceService != null) && (this.graphicsDeviceService.GraphicsDevice != null))
             {
                 LoadContent();
             }
+            // GG EDIT InitializeGameComponents started being called here
+            InitializeGameComponents();
         }
 		
 		private void InitializeGameComponents()
 		{
-			foreach (GameComponent gc in _gameComponentCollection)
-            {                
-                gc.Initialize();
+            try
+            {
+                foreach (GameComponent gc in _gameComponentCollection)
+                {
+                    gc.Initialize();
+                }
+            }
+            catch (System.Exception e) // GG EDIT
+            {
+                throw e;
+                //NaCl.Debug.print(String.Format("Initialize exception: {0}\n", e));
+                //Exit();
             }
 		}
 
         protected virtual void Update(GameTime gameTime)
         {
-			if ( _initialized)
-			{
-				foreach (GameComponent gc in _gameComponentCollection)			
-				{
-					if (gc.Enabled)
-	                {
-	                    gc.Update(gameTime);
-	                }
-	            }
-			}
-			else
-			{
-				if (!_initializing) 
-				{                    
-                    _initializing = true;
-
-                    InitializeGameComponents();
-                    _initialized = true;
-                    _initializing = false;                                        
-				}
-			}
+            // GG EDITED -- removed background thread stuff
+            _initializing = false;
+            _initialized = true;
+            // super crappy copy
+            GameComponentCollection gcc = new GameComponentCollection();
+            foreach (GameComponent gc in _gameComponentCollection)
+            {
+                gcc.Add(gc);
+            }
+            foreach (GameComponent gc in gcc)
+            {
+                if (gc.Enabled)
+                {
+                    gc.Update(gameTime);
+                }
+            }
         }
 		
         protected virtual void Draw(GameTime gameTime)
@@ -444,12 +428,7 @@ namespace Microsoft.Xna.Framework
         public void Exit()
         {
             if (!_view.OpenTkGameWindow.IsExiting)
-            {
-                // raise the Exiting event
-            	if (Exiting != null) Exiting(this, null);                
-                Net.NetworkSession.Exit();
                 _view.OpenTkGameWindow.Exit();
-            }
         }
 
         public GameComponentCollection Components
@@ -459,13 +438,18 @@ namespace Microsoft.Xna.Framework
                 return _gameComponentCollection;
             }
         }
-		
+
+        protected virtual void OnExiting(object sender, EventArgs args)
+        {
+            // GG TODO
+        }
+
 		#region Events
 		public event EventHandler Activated;
 		public event EventHandler Deactivated;
-		public event EventHandler Disposed;
-		public event EventHandler Exiting;
-        #endregion
+		//public event EventHandler Disposed;
+		//public event EventHandler Exiting;
+		#endregion
     }
 }
 

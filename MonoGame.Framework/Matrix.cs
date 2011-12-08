@@ -26,6 +26,7 @@ SOFTWARE.
 #endregion License
 
 using System;
+using OpenTK;
 
 namespace Microsoft.Xna.Framework
 {
@@ -139,23 +140,17 @@ namespace Microsoft.Xna.Framework
             get { return identity; }
         }
 
-		// made this static so we dont create a new
-		// float array each time we use the matrix 
-		private static float[] openglMatrix = { 1f, 0f, 0f, 0f, 
-	                                            0f, 1f, 0f, 0f, 
-	                                            0f, 0f, 1f, 0f, 
-	                                            0f, 0f, 0f, 1f};
-		
-				
 		
 		// required for OpenGL 2.0 projection matrix stuff
 		public static float[] ToFloatArray(Matrix mat)
         {
-			openglMatrix[0]  = mat.M11; openglMatrix[1]  = mat.M12; openglMatrix[2]  = mat.M13; openglMatrix[3]  = mat.M14;
-			openglMatrix[4]  = mat.M21; openglMatrix[5]  = mat.M22; openglMatrix[6]  = mat.M23; openglMatrix[7]  = mat.M24;
-			openglMatrix[8]  = mat.M31; openglMatrix[9]  = mat.M32; openglMatrix[10] = mat.M33; openglMatrix[11] = mat.M34;
-			openglMatrix[12] = mat.M41; openglMatrix[13] = mat.M42; openglMatrix[14] = mat.M43; openglMatrix[15] = mat.M44;
-			return openglMatrix;
+			float [] matarray = {
+									mat.M11, mat.M12, mat.M13, mat.M14,
+									mat.M21, mat.M22, mat.M23, mat.M24,
+									mat.M31, mat.M32, mat.M33, mat.M34,
+									mat.M41, mat.M42, mat.M43, mat.M44
+								};
+			return matarray;
 		}
         
         public Vector3 Left
@@ -220,6 +215,16 @@ namespace Microsoft.Xna.Framework
 
 
         #region Public Methods
+
+        // GG EDIT added
+        public Matrix4 ToMatrix4()
+        {
+            return new Matrix4(
+                M11, M12, M13, M14,
+                M21, M22, M23, M24,
+                M31, M32, M33, M34,
+                M41, M42, M43, M44);
+        }
 
         public static Matrix Add(Matrix matrix1, Matrix matrix2)
         {
@@ -706,13 +711,14 @@ namespace Microsoft.Xna.Framework
 		    m.M32 = z[1];
 		    m.M33 = z[2];
 		    m.M34 = 0.0f;
-		    m.M41 = -1.0f * (x[0]*cameraPosition.X + x[1]*cameraPosition.Y + x[2]*cameraPosition.Z);
-		    m.M42 = -1.0f * (y[0]*cameraPosition.X + y[1]*cameraPosition.Y + y[2]*cameraPosition.Z);
-		    m.M43 = -1.0f * (z[0]*cameraPosition.X + z[1]*cameraPosition.Y + z[2]*cameraPosition.Z);
+		    m.M41 = 0.0f;
+		    m.M42 = 0.0f;
+		    m.M43 = 0.0f;
 		    m.M44 = 1.0f;
 			
 			return m;
         }
+
 
         public static void CreateLookAt(ref Vector3 cameraPosition, ref Vector3 cameraTarget, ref Vector3 cameraUpVector, out Matrix result)
         {
@@ -736,42 +742,76 @@ namespace Microsoft.Xna.Framework
 		    result.M43 = -Vector3.Dot(vector, cameraPosition);
 		    result.M44 = 1f;
         }
-		
-		public static Matrix CreateOrthographic(float width, float height, float zNearPlane, float zFarPlane)
+
+
+        public static Matrix CreateOrthographic(float width, float height, float zNearPlane, float zFarPlane)
         {
-			return CreateOrthographicOffCenter(-width / 2, width / 2, -height / 2, height / 2, zNearPlane, zFarPlane);
+            Matrix matrix;
+		    matrix.M11 = 2f / width;
+		    matrix.M12 = matrix.M13 = matrix.M14 = 0f;
+		    matrix.M22 = 2f / height;
+		    matrix.M21 = matrix.M23 = matrix.M24 = 0f;
+		    matrix.M33 = 1f / (zNearPlane - zFarPlane);
+		    matrix.M31 = matrix.M32 = matrix.M34 = 0f;
+		    matrix.M41 = matrix.M42 = 0f;
+		    matrix.M43 = zNearPlane / (zNearPlane - zFarPlane);
+		    matrix.M44 = 1f;
+		    return matrix;
         }
+
 
         public static void CreateOrthographic(float width, float height, float zNearPlane, float zFarPlane, out Matrix result)
         {
-            result = CreateOrthographicOffCenter(-width / 2, width / 2, -height / 2, height / 2, zNearPlane, zFarPlane);
+            result.M11 = 2f / width;
+		    result.M12 = result.M13 = result.M14 = 0f;
+		    result.M22 = 2f / height;
+		    result.M21 = result.M23 = result.M24 = 0f;
+		    result.M33 = 1f / (zNearPlane - zFarPlane);
+		    result.M31 = result.M32 = result.M34 = 0f;
+		    result.M41 = result.M42 = 0f;
+		    result.M43 = zNearPlane / (zNearPlane - zFarPlane);
+		    result.M44 = 1f;
         }
+
 
         public static Matrix CreateOrthographicOffCenter(float left, float right, float bottom, float top, float zNearPlane, float zFarPlane)
         {
-			Matrix result = identity;
-
-            float invRL = 1 / (right - left);
-            float invTB = 1 / (top - bottom);
-            float invFN = 1 / (zFarPlane - zNearPlane);
-
-            result.M11 = 2 * invRL;
-            result.M22 = 2 * invTB;
-            result.M33 = -2 * invFN;
-
-            result.M41 = -(right + left) * invRL;
-            result.M42 = -(top + bottom) * invTB;
-            result.M43 = -(zFarPlane + zNearPlane) * invFN;
-            result.M44 = 1;
+            float tx = - (right + left)/(right - left);
+			float ty = - (top + bottom)/(top - bottom);
+			float tz = - (zFarPlane + zNearPlane)/(zFarPlane - zNearPlane);
 			
-			return result;
+			Matrix m = identity;
+			
+			m.M11 = 2.0f/(right-left);
+			m.M12 = 0;
+			m.M13 = 0;
+			m.M14 = tx;
+			
+			m.M21 = 0;
+			m.M22 = 2.0f/(top-bottom);
+			m.M23 = 0;
+			m.M24 = ty;
+			
+			m.M31 = 0;
+			m.M32 = 0;
+			m.M33 = -2.0f/(zFarPlane - zNearPlane);
+			m.M34 = tz;
+			
+			m.M41 = 0;
+			m.M42 = 0;
+			m.M43 = 0;
+			m.M44 = 1;
+			
+			return m;
         }
+
         
         public static void CreateOrthographicOffCenter(float left, float right, float bottom, float top,
             float nearPlaneDistance, float farPlaneDistance, out Matrix result)
         {
             result = CreateOrthographicOffCenter( left, right, bottom, top, nearPlaneDistance, farPlaneDistance);
         }
+
 
         public static Matrix CreatePerspective(float width, float height, float nearPlaneDistance, float farPlaneDistance)
         {
@@ -1695,10 +1735,7 @@ namespace Microsoft.Xna.Framework
 
         public override string ToString()
         {
-            return "{" + String.Format("M11:{0} M12:{1} M13:{2} M14:{3}", M11, M12, M13, M14) + "}"
-				+ " {" + String.Format("M21:{0} M22:{1} M23:{2} M24:{3}", M21, M22, M23, M24) + "}"
-				+ " {" + String.Format("M31:{0} M32:{1} M33:{2} M34:{3}", M31, M32, M33, M34) + "}"
-				+ " {" + String.Format("M41:{0} M42:{1} M43:{2} M44:{3}", M41, M42, M43, M44) + "}";
+            throw new NotImplementedException();
         }
 
 

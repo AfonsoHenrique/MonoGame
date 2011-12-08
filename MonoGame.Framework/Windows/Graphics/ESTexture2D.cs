@@ -42,8 +42,14 @@ using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
-using System.IO;
+using Microsoft.Xna.Framework.Content;
+#if NACL
+using OpenTK.Graphics.ES20;
+using GLPixelFormat = OpenTK.Graphics.ES20.PixelFormat; // PixelFormat aliases with property
+#else
 using OpenTK.Graphics.OpenGL;
+using GLPixelFormat = OpenTK.Graphics.OpenGL.PixelFormat;
+#endif
 using Buffer = System.Buffer;
 
 
@@ -56,11 +62,21 @@ namespace Microsoft.Xna.Framework.Graphics
 		private int _width,_height;
 		private SurfaceFormat _format;
 		private float _maxS,_maxT;
-        private IntPtr _pixelData;
-		
-		public ESTexture2D (IntPtr data, SurfaceFormat pixelFormat, int width, int height, Size size, All filter)
+
+        //GG EDIT
+        public ESTexture2D(int height, int width, uint id)
+        {
+            _name = id;
+            _height = height;
+            _width = width;
+            _size = new Size(width, height);
+            _format = SurfaceFormat.Color;//dunno about this
+        }
+
+
+        public ESTexture2D (IntPtr data, int dataLength, SurfaceFormat pixelFormat, int width, int height, Size size, All filter)
 		{
-			InitWithData(data,pixelFormat,width,height,size, filter);
+			InitWithData(data, dataLength, pixelFormat,width,height,size, filter);
 		}
 		
 		public ESTexture2D(Bitmap image, All filter)
@@ -74,39 +90,60 @@ namespace Microsoft.Xna.Framework.Graphics
                            System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
             _format = SurfaceFormat.Color;
-            InitWithData(bitmapData.Scan0, _format, image.Width, image.Height, new Size(image.Width, image.Height), filter);
+            int dataLength = bitmapData.Height * bitmapData.Width * 4;
+            InitWithData(bitmapData.Scan0, dataLength, _format, image.Width, image.Height, new Size(image.Width, image.Height), filter);
             image.UnlockBits(bitmapData);
         }
 
-        public void InitWithData(IntPtr data, SurfaceFormat pixelFormat, int width, int height, Size size, All filter)
+        public void InitWithData(IntPtr data, int dataLength, SurfaceFormat pixelFormat, int width, int height, Size size, All filter)
         {
+            //GG somehow these become off on NACL
+            size.Width = width;
+            size.Height = height;
+
+            //NaCl.Debug.print("InitWithData: " + pixelFormat + "," +data+ "," +dataLength+ "," +width+ "," +height+ "," +size+ "," +filter);
             GL.GenTextures(1, out _name);
             GL.BindTexture(TextureTarget.Texture2D, _name);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)filter);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)filter);
-
-            int sz = 0;
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)All.ClampToEdge);
+            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)All.ClampToEdge);
 
             switch (pixelFormat) {
-				case SurfaceFormat.Color /*kTexture2DPixelFormat_RGBA8888*/:
-                case SurfaceFormat.Dxt3:
-                    sz = 4;
-                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, (int)width, (int)height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, data);
+                case SurfaceFormat.Dxt1: // GG EDIT added
+                    GL.CompressedTexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.CompressedRgbaS3tcDxt1Ext, (int)width, (int)height, 0, dataLength, data);
+                    break;
+                case SurfaceFormat.Dxt3: // GG EDIT added
+#if NO_DXT35
+                    return; // throw new ContentLoadException("GG TEMPORARILY NOT SUPPORTING DXT3");
+#else
+                    GL.CompressedTexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.CompressedRgbaS3tcDxt3Ext, (int)width, (int)height, 0, dataLength, data);
+                    break;
+#endif
+                case SurfaceFormat.Dxt5: // GG EDIT added
+#if NO_DXT35
+                    break;// throw new ContentLoadException("GG TEMPORARILY NOT SUPPORTING DXT5");
+#else
+                    GL.CompressedTexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.CompressedRgbaS3tcDxt5Ext, (int)width, (int)height, 0, dataLength, data);
+                    break;
+#endif
+                case SurfaceFormat.Color: // GG EDIT using BGRA because that's what uncompressed on-disk textures are stored in
+                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, (int)width, (int)height, 0, GLPixelFormat.Bgra, PixelType.UnsignedByte, data);
+                    break;
+                case SurfaceFormat.Rgba32: // GG EDIT RGBA32 is the code word for "CPU-decompressed DXT"
+                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, (int)width, (int)height, 0, GLPixelFormat.Rgba, PixelType.UnsignedByte, data);
                     break;
                 case SurfaceFormat.Bgra4444 /*kTexture2DPixelFormat_RGBA4444*/:
-                    sz = 2;
-                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, (int)width, (int)height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedShort4444, data);
+                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, (int)width, (int)height, 0, GLPixelFormat.Rgba, PixelType.UnsignedShort4444, data);
                     break;
                 case SurfaceFormat.Bgra5551 /*kTexture2DPixelFormat_RGB5A1*/:
-                    sz = 2;
-                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, (int)width, (int)height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedShort5551, data);
+                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, (int)width, (int)height, 0, GLPixelFormat.Rgba, PixelType.UnsignedShort5551, data);
                     break;
                 case SurfaceFormat.Alpha8 /*kTexture2DPixelFormat_A8*/:
-                    sz = 1;
-                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Alpha, (int)width, (int)height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Alpha, PixelType.UnsignedByte, data);
+                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Alpha, (int)width, (int)height, 0, GLPixelFormat.Alpha, PixelType.UnsignedByte, data);
                     break;
                 default:
-                    throw new NotSupportedException("Texture format");
+                    throw new NotSupportedException("Texture format " + pixelFormat);
             }
             
             _size = size;
@@ -115,42 +152,6 @@ namespace Microsoft.Xna.Framework.Graphics
             _format = pixelFormat;
             _maxS = size.Width / (float)width;
             _maxT = size.Height / (float)height;
-
-            _pixelData = data;
-        }
-
-        public void SetPixel(int x, int y, byte red, byte green, byte blue, byte alpha)
-        {
-
-            GL.BindTexture(TextureTarget.Texture2D, _name);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)All.Nearest);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)All.Nearest);
-
-            switch (_format)
-            {
-                case SurfaceFormat.Color /*kTexture2DPixelFormat_RGBA8888*/:
-                case SurfaceFormat.Dxt1:
-                case SurfaceFormat.Dxt3:
-                    byte[] pixelInfo = new byte[4] { red, green, blue, alpha };
-                    Marshal.Copy(pixelInfo, ((y - 1) * _width) + (x - 1), _pixelData, 4);
-                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, _width, _height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, _pixelData);
-                    break;
-
-                // TODO: Implement the rest of these but lack of knowledge and examples prevents this for now
-                case SurfaceFormat.Bgra4444 /*kTexture2DPixelFormat_RGBA4444*/:
-                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, _width, _height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedShort4444, _pixelData);
-                    break;
-                case SurfaceFormat.Bgra5551 /*kTexture2DPixelFormat_RGB5A1*/:
-                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, _width, _height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.UnsignedShort5551, _pixelData);
-                    break;
-                case SurfaceFormat.Alpha8 /*kTexture2DPixelFormat_A8*/:
-                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Alpha, _width, _height, 0, OpenTK.Graphics.OpenGL.PixelFormat.Alpha, PixelType.UnsignedByte, _pixelData);
-                    break;
-                default:
-                    throw new NotSupportedException("Texture format");
-                    ;
-            }
-
         }
 				
 		public unsafe void Dispose ()
@@ -228,19 +229,7 @@ namespace Microsoft.Xna.Framework.Graphics
             colors[2] = rb2 + g2;
         }
 		
-		static public ESTexture2D InitiFromDxt3File(BinaryReader rdr, int length, int width, int height)
-        {
-            byte [] b = GetBits (width, length, height, rdr);
-			
-			// Copy bits
-			IntPtr pointer = Marshal.AllocHGlobal(length);
-			Marshal.Copy (b, 0, pointer, length);
-            ESTexture2D result = new ESTexture2D(pointer,SurfaceFormat.Dxt3,width,height,new Size(width,height),All.Linear);
-			Marshal.FreeHGlobal(pointer);
-			return result;
-        }
-
-		public static byte[] GetBits (int width, int length, int height, BinaryReader rdr)
+		public static byte[] GetBits (int width, int length, int height, System.IO.BinaryReader rdr)
 		{
 			int xoffset = 0;
 			int yoffset = 0;
@@ -274,34 +263,9 @@ namespace Microsoft.Xna.Framework.Graphics
 			}
 			return b;
 		}
-
-        public unsafe void DrawAtPoint(Vector2 point)
-		{
-			float []coordinates = { 0,	_maxT, _maxS, _maxT, 0, 0,_maxS, 0 };
-			float width = (float)_width * _maxS;
-			float height = (float)_height * _maxT;
-			float []vertices = {	-width / 2.0f + point.X, -height / 2.0f + point.Y,	0.0f,
-								width / 2.0f + point.X,	-height / 2.0f + point.Y,	0.0f,
-								-width / 2.0f + point.X,	height / 2.0f + point.Y,	0.0f,
-								width / 2.0f + point.X,	height / 2.0f + point.Y,	0.0f };
-
-            GL.BindTexture(TextureTarget.Texture2D, _name);
-			GL.VertexPointer(3, VertexPointerType.Float, 0, vertices);
-			GL.TexCoordPointer(2, TexCoordPointerType.Float, 0, coordinates);
-			GL.DrawArrays(BeginMode.TriangleStrip, 0, 4);
-		}
-		
-		public unsafe void DrawInRect(Rectangle rect)
-		{
-			float[]	 coordinates = {  0, _maxT,_maxS, _maxT,0, 0,_maxS,	0  };
-			float[]	vertices = { rect.Left,	rect.Top, 0.0f, rect.Right, rect.Top,0.0f,rect.Left,rect.Bottom,0.0f,rect.Right,rect.Bottom,0.0f };
-			
-			GL.BindTexture(TextureTarget.Texture2D, _name);
-            GL.VertexPointer(3, VertexPointerType.Float, 0, vertices);
-            GL.TexCoordPointer(2, TexCoordPointerType.Float, 0, coordinates);
-			GL.DrawArrays(BeginMode.TriangleStrip, 0, 4);
-		}
-		
+                
+                // GG EDIT removed DrawAtPoint and DrawInRect because they weren't used and weren't NACL-compatible
+                
 		public Size ContentSize
 		{
 			get 
@@ -354,14 +318,6 @@ namespace Microsoft.Xna.Framework.Graphics
 				return _maxT;
 			}
 		}
-
-        public IntPtr PixelData
-        {
-            get
-            {
-                return _pixelData;
-            }
-        }
 		
 	}
 }

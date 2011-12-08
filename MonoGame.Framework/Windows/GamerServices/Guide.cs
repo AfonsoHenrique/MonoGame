@@ -46,7 +46,7 @@ using System.Linq;
 using System.Threading;
 using System.Runtime.Remoting.Messaging;
 
-using Microsoft.Xna.Framework.Net;
+
 using Microsoft.Xna.Framework.Storage;
 
 
@@ -222,15 +222,14 @@ namespace Microsoft.Xna.Framework.GamerServices
 				return;
 			}
 
-            Microsoft.Xna.Framework.GamerServices.MonoGameGamerServicesHelper.ShowSigninSheet();
-            if (GamerServicesComponent.LocalNetworkGamer == null)
-            {
-                GamerServicesComponent.LocalNetworkGamer = new LocalNetworkGamer();
-            }
-            else
-            {
-                GamerServicesComponent.LocalNetworkGamer.SignedInGamer.BeginAuthentication(null, null);
-            }
+            //if (GamerServicesComponent.LocalNetworkGamer == null)
+            //{
+            //    GamerServicesComponent.LocalNetworkGamer = new LocalNetworkGamer();
+            //}
+            //else
+            //{
+            //    GamerServicesComponent.LocalNetworkGamer.SignedInGamer.BeginAuthentication(null, null);
+            //}
 		}
 
 		public static void ShowLeaderboard()
@@ -367,9 +366,18 @@ namespace Microsoft.Xna.Framework.GamerServices
 		}
 		#endregion
 
-        internal static void Initialise(Game game)
+
+    
+        public static IAsyncResult BeginShowStorageDeviceSelector(PlayerIndex player, AsyncCallback callback, Object state)
         {
-            MonoGameGamerServicesHelper.Initialise(game);
+            //GG TODO
+            return null;
         }
-    }
+
+        public static IAsyncResult BeginShowStorageDeviceSelector(PlayerIndex player, int sizeInBytes, int directoryCount, AsyncCallback callback, Object state)
+        {
+            //GG TODO
+            return null;
+        }
+	}
 }

@@ -436,7 +436,7 @@ namespace Microsoft.Xna.Framework
 
         #region Private Methods
 
-#warning Move this to the PlaneHelper class
+//#warning Move this to the PlaneHelper class
         private void CreateCorners()
         {
             this.corners = new Vector3[8];

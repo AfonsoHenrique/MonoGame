@@ -55,7 +55,12 @@ namespace Microsoft.Xna.Framework.Graphics
 		private int height;
 		private float minDepth;
 		private float maxDepth;
-		
+
+        public override string ToString()
+        {
+            return String.Format("Viewport[{0}x{1}]", width, height); ;
+        }
+
 		#region Properties
 		public int Height {
 			get {
@@ -186,9 +191,6 @@ namespace Microsoft.Xna.Framework.Graphics
 		    float num = a - b;
 		    return ((-1.401298E-45f <= num) && (num <= float.Epsilon));
 		}
-
-
-       
     }
 }
 

@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using System.IO;
 using System.Xml;
 
 using OpenTK.Graphics.ES11;
@@ -93,7 +92,31 @@ namespace Microsoft.Xna.Framework.Graphics
 
         public Vector2 MeasureString(StringBuilder text)
         {
-            return MeasureString(text.ToString());
+            Vector2 v = Vector2.Zero;
+            float xoffset = 0;
+            float yoffset = 0;
+            float newHeight = 0;
+
+            for( int i = 0; i < text.Length; i++ )
+            {
+                char c = text[i];
+                if( c == '\n' )
+                {
+                    yoffset += LineSpacing;
+                    xoffset = 0;
+                    continue;
+                }
+                if( characterData.ContainsKey( c ) == false ) continue;
+                GlyphData g = characterData[c];
+                xoffset += g.Kerning.Y + g.Kerning.Z + Spacing;
+                newHeight = g.Cropping.Height + yoffset;
+                if( newHeight > v.Y )
+                {
+                    v.Y = newHeight;
+                }
+                if( xoffset > v.X ) v.X = xoffset;
+            }
+            return v;
 		}
 
         public SpriteFont(Texture2D texture, List<Rectangle>glyphs, List<Rectangle>cropping, List<char>charMap, int lineSpacing, float spacing, List<Vector3>kerning, char? defaultCharacter)

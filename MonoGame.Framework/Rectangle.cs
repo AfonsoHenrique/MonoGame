@@ -78,6 +78,12 @@ namespace Microsoft.Xna.Framework
             get { return (this.Y + this.Height); }
         }
 
+        public Point Location
+        {
+            get { return new Point(X, Y); }
+            set { X = value.X; Y = value.Y; }
+        }
+
         #endregion Public Properties
 
 
@@ -126,6 +132,49 @@ namespace Microsoft.Xna.Framework
             return !(a == b);
         }
 
+        public static Rectangle Intersect(Rectangle value1, Rectangle value2)
+        {
+            int x = Math.Max(value1.X, value2.X);
+            int y = Math.Max(value1.Y, value2.Y);
+            int width = Math.Min(value1.Right, value2.Right) - x;
+            int height = Math.Min(value1.Bottom, value2.Bottom) - y;
+            return new Rectangle(x, y, width, height);
+        }
+
+        // Rect exactly encapsulates 2 input rects
+        public static void Union(ref Rectangle value1, ref Rectangle value2, out Rectangle o)
+        {
+            if (value1 == Empty) 
+            {
+                o = value2;
+                return;
+            }
+            else if (value1 == Empty) 
+            {
+                o = value1;
+                return;
+            }
+
+            // save off values in case o and value1 or o and value2 are the same
+            int l = Math.Min(value1.X, value2.X);
+            int t = Math.Min(value1.Y, value2.Y);
+            int r = Math.Max( value1.Right, value2.Right );
+            int b = Math.Max( value1.Bottom, value2.Bottom );
+
+            o.X = l;
+            o.Y = t;
+            o.Width = r - l;
+            o.Height = b - t;
+        }
+
+        // New Rect exactly encapsulates 2 input rects
+        public static Rectangle Union(Rectangle value1, Rectangle value2)
+        {
+            Rectangle o = new Rectangle();
+            Union(ref value1, ref value2, out o);
+            return o;
+        }
+
         public void Offset(Point offset)
         {
             X += offset.X;
@@ -138,32 +187,13 @@ namespace Microsoft.Xna.Framework
             Y += offsetY;
         }
 		
-		public Point Location
-		{
-			get 
-			{
-				return new Point(this.X, this.Y);
-			}
-			set
-			{
-				X = value.X;
-				Y = value.Y;
-			}
-		}
-		
 		public Point Center
 		{
 			get 
-			{
-				// This is incorrect
-				//return new Point( (this.X + this.Width) / 2,(this.Y + this.Height) / 2 );
-				// What we want is the Center of the rectangle from the X and Y Origins
-				return new Point(this.X + (this.Width / 2), this.Y + (this.Height / 2));
+			{ 
+				return new Point( this.X + this.Width / 2, this.Y + this.Height / 2 ); 
 			}
 		}
-
-
-
 
         public void Inflate(int horizontalValue, int verticalValue)
         {
@@ -211,7 +241,6 @@ namespace Microsoft.Xna.Framework
 
         }
 
-
         public void Intersects(ref Rectangle value, out bool result)
         {
             result = !(value.Left > Right
@@ -220,30 +249,6 @@ namespace Microsoft.Xna.Framework
                      || value.Bottom < Top
                     );
 
-        }
-
-        public static Rectangle Intersect(Rectangle value1, Rectangle value2)
-        {
-            Rectangle rectangle;
-            Intersect(ref value1, ref value2, out rectangle);
-            return rectangle;
-        }
-
-
-        public static void Intersect(ref Rectangle value1, ref Rectangle value2, out Rectangle result)
-        {
-            if (value1.Intersects(value2))
-            {
-                int right_side = Math.Min(value1.X + value1.Width, value2.X + value2.Width);
-                int left_side = Math.Max(value1.X, value2.X);
-                int top_side = Math.Max(value1.Y, value2.Y);
-                int bottom_side = Math.Min(value1.Y + value1.Height, value2.Y + value2.Height);
-                result = new Rectangle(left_side, top_side, right_side - left_side, bottom_side - top_side);
-            }
-            else
-            {
-                result = new Rectangle(0, 0, 0, 0);
-            }
         }
 
         #endregion Public Methods

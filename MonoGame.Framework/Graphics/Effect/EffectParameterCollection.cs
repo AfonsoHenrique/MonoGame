@@ -8,11 +8,19 @@ namespace Microsoft.Xna.Framework.Graphics
     public class EffectParameterCollection : IEnumerable<EffectParameter>
     {
         internal Dictionary<string, EffectParameter> _parameters = new Dictionary<string, EffectParameter>();
+        List<string> names = new List<string>();
 
         public EffectParameter this[int index]
         {
-            get { throw new NotImplementedException(); }
-            set { throw new NotImplementedException(); }
+            get
+            {
+                return _parameters[names[index]];
+            }
+            set
+            {
+                this[value.Name] = value;
+                names.Insert(index, value.Name);
+            }
         }
 
         public int Count
@@ -22,8 +30,15 @@ namespace Microsoft.Xna.Framework.Graphics
 
         public EffectParameter this[string name]
         {
-            get { return _parameters[name]; }
-            internal set { _parameters[name] = value; }
+            get
+            {
+                return _parameters[name];
+            }
+            set 
+            {
+                _parameters[name] = value;
+                names.Insert(value.internalIndex, value.Name);
+            }
         }
 
         public IEnumerator<EffectParameter> GetEnumerator()

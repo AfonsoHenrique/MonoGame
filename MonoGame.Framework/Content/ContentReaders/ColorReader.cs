@@ -43,6 +43,7 @@ purpose and non-infringement.
 using System;
 
 using Microsoft.Xna.Framework.Content;
+using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework;
 
 namespace Microsoft.Xna.Framework.Content

@@ -1,4 +1,4 @@
-#region License
+// #region License
 // /*
 // Microsoft Public License (Ms-PL)
 // MonoGame - Copyright © 2009 The MonoGame Team
@@ -36,7 +36,8 @@
 // permitted under your local laws, the contributors exclude the implied warranties of merchantability, fitness for a particular
 // purpose and non-infringement.
 // */
-#endregion License
+// #endregion License
+// 
 
 using System;
 
@@ -44,23 +45,26 @@ namespace Microsoft.Xna.Framework.Input
 {
 	public struct GamePadTriggers
 	{
-        float left, right;
-
-        public float Left
-        {
-            get { return left; }
-            internal set { left = MathHelper.Clamp(value, 0f, 1f); }
-        }
-        public float Right
-        {
-            get { return right; }
-            internal set { right = MathHelper.Clamp(value, 0f, 1f); }
-        }
-
-        public GamePadTriggers(float leftTrigger, float rightTrigger):this()
-        {
-            Left = leftTrigger;
-            Right = rightTrigger;
-        }
+		public GamePadTriggers (
+         float leftTrigger,
+         float rightTrigger)
+		{
+		}
+		
+		public float Left 
+		{ 
+			get
+			{
+				return 0.0f;
+			}
+		}
+		
+		public float Right 
+		{ 
+			get
+			{
+				return 0.0f;
+			}
+		}
 	}
 }

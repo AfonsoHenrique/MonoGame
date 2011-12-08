@@ -39,7 +39,7 @@
 // #endregion License
 // 
 using System;
-using System.IO;
+
 
 namespace Microsoft.Xna.Framework.GamerServices
 {
@@ -67,7 +67,7 @@ namespace Microsoft.Xna.Framework.GamerServices
 		
 		public string Name { get; internal set;}
 
-		public Stream GetPicture ()
+		public System.IO.Stream GetPicture ()
 		{
 			throw new NotImplementedException();
 		}

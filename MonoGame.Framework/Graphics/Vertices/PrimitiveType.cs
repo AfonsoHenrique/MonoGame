@@ -45,6 +45,7 @@ namespace Microsoft.Xna.Framework
 {
 	public enum PrimitiveType
 	{
+        TriangleFan,//GG TODO
 		LineList, // 	Renders the vertices as a list of isolated straight line segments; the count may be any positive integer.
 		LineStrip, //	Renders the vertices as a single polyline; the count may be any positive integer.
 		TriangleList, // 	Renders the specified vertices as a sequence of isolated triangles. Each group of three vertices defines a separate triangle. Back-face culling is affected by the current winding-order render state.

@@ -106,7 +106,32 @@ namespace Microsoft.Xna.Framework.Graphics
                 case VertexElementFormat.HalfVector4:
                     return All11.Float;
             }
+            throw new NotImplementedException();
+        }
 
+
+        public static All11 OpenGLTexCoordType(this VertexElementFormat elementFormat)
+        {
+            switch (elementFormat)
+            {
+                case VertexElementFormat.Single:
+                    throw new NotImplementedException();
+
+                case VertexElementFormat.Vector2:
+                    return All11.Float;
+
+                case VertexElementFormat.Vector3:
+                    return All11.Float;
+
+                case VertexElementFormat.Vector4:
+                    return All11.Float;
+
+                case VertexElementFormat.HalfVector2:
+                    return All11.Float;
+
+                case VertexElementFormat.HalfVector4:
+                    return All11.Float;
+            }
             throw new NotImplementedException();
         }
 

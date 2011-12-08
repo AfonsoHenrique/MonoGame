@@ -40,14 +40,11 @@ purpose and non-infringement.
 
 using System;
 using System.Drawing;
-using System.IO;
+using NaCl.PLFS;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using Microsoft.Xna.Framework.Graphics;
-using Path = System.IO.Path;
-using Microsoft.Xna.Framework.Media;
-using Microsoft.Xna.Framework.Audio;
 
 
 namespace Microsoft.Xna.Framework.Content
@@ -58,6 +55,8 @@ namespace Microsoft.Xna.Framework.Content
         private IServiceProvider serviceProvider;
 		private IGraphicsDeviceService graphicsDeviceService;
 
+        private Queue<Action> mainThreadCallbacks;
+
         public ContentManager(IServiceProvider serviceProvider)
         {
 			if (serviceProvider == null)
@@ -65,6 +64,7 @@ namespace Microsoft.Xna.Framework.Content
                 throw new ArgumentNullException("serviceProvider");
             }
             this.serviceProvider = serviceProvider;
+            this.mainThreadCallbacks = new Queue<Action>();
 		}
 
         public ContentManager(IServiceProvider serviceProvider, string rootDirectory)
@@ -79,133 +79,181 @@ namespace Microsoft.Xna.Framework.Content
             }
             this.RootDirectory = rootDirectory;
             this.serviceProvider = serviceProvider;
+            this.mainThreadCallbacks = new Queue<Action>();
+        }
+
+        // GG EDIT added
+        // does one enqueued callback; must be called from the main thread (no enforcement of this, though)
+        public bool ExecuteOneMainThreadCallback()
+        {
+            lock (mainThreadCallbacks)
+            {
+                if (mainThreadCallbacks.Count > 0)
+                {
+                    mainThreadCallbacks.Dequeue()();
+                    return true;
+                }
+            }
+            return false;
         }
 
         public void Dispose()
         {
         }
 		
-        public T Load<T>(string assetName)
+        public virtual T Load<T>(string assetName)
         {			
-			string originalAssetName = assetName;
-			object result = null;
-			
-			if (this.graphicsDeviceService == null)
+			// GG TODO
+            // this technically should be checking to see if the asset is in-memory
+            // but we may not need that functionality
+            return ReadAsset<T>(assetName, null);
+        }
+
+        // GG EDIT added
+        // do a little work before any real ReadAsset call; might return an asset (but probably null)
+        private object ReadAssetPrelim<T>(string assetName)
+        {
+            if (this.graphicsDeviceService == null)
             {
                 this.graphicsDeviceService = serviceProvider.GetService(typeof(IGraphicsDeviceService)) as IGraphicsDeviceService;
                 if (this.graphicsDeviceService == null)
-                {
                     throw new InvalidOperationException("No Graphics Device Service");
-                }
             }
-			
-			// Check for windows-style directory separator character
-            //Lowercase assetName (monodroid specification all assests are lowercase)
-            assetName = Path.Combine(_rootDirectory, assetName.Replace('\\', Path.DirectorySeparatorChar)).ToLower();
-			
-			// Get the real file name
-			if ((typeof(T) == typeof(Curve))) 
-			{				
-				assetName = CurveReader.Normalize(assetName);
-			}
-			else if ((typeof(T) == typeof(Texture2D))) 
-			{				
-				assetName = Texture2DReader.Normalize(assetName);
-			}
-            else if ((typeof(T) == typeof(SpriteFont))) 
-			{
-				assetName = SpriteFontReader.Normalize(assetName);
-			} 
-            else if ((typeof(T) == typeof(Effect))) 
-			{
-				assetName = Effect.Normalize(assetName);
-			}
-            else if ((typeof(T) == typeof(Song)))
+
+            //GG EDIT
+            if (typeof(T).FullName == "Microsoft.Xna.Framework.Graphics.Effect")
             {
-                assetName = SongReader.Normalize(assetName);
+                Object e = new Effect(assetName, this.graphicsDeviceService.GraphicsDevice);
+                return e;
             }
-            else if ((typeof(T) == typeof(SoundEffect)))
-            {
-                assetName = SoundEffectReader.Normalize(assetName);
-            }
-            else if ((typeof(T) == typeof(Video)))
-            {
-                assetName = Video.Normalize(assetName);
-            }
-            else {
-                throw new NotSupportedException("Format not supported");
-            }
-			
-			if (string.IsNullOrEmpty(assetName))
-			{	
-				throw new ContentLoadException("Could not load "  + originalAssetName + " asset!");
-			}
-
-            if (!Path.HasExtension(assetName))
-                assetName = string.Format("{0}.xnb", assetName);
-			
-			if (Path.GetExtension(assetName).ToUpper() !=".XNB")
-			{
-				if ((typeof(T) == typeof(Texture2D))) {
-                    //Basically the same as Texture2D.FromFile but loading from the assets instead of a filePath
-                    using (Stream assetStream = File.Open(assetName, FileMode.Open, FileAccess.Read))
-                    {
-                        Bitmap image = (Bitmap)Bitmap.FromStream(assetStream);
-                        ESImage theTexture = new ESImage(image, graphicsDeviceService.GraphicsDevice.PreferedFilter);
-                        result = new Texture2D(theTexture) { Name = Path.GetFileNameWithoutExtension(assetName) };
-                    }
-				}
-				if ((typeof(T) == typeof(SpriteFont)))
-				{
-					//result = new SpriteFont(Texture2D.FromFile(graphicsDeviceService.GraphicsDevice,assetName), null, null, null, 0, 0.0f, null, null);
-					throw new NotImplementedException();
-				}
-                if (typeof(T) == typeof(Effect))
-                {
-                    result = new Effect(graphicsDeviceService.GraphicsDevice, assetName);
-                }
-
-                if ((typeof(T) == typeof(Song)))
-                    result = new Song(assetName);
-                if ((typeof(T) == typeof(SoundEffect)))
-                    result = new SoundEffect(assetName);
-                if ((typeof(T) == typeof(Video)))
-                    result = new Video(assetName);
-
-			}
-			else 
-			{
-				// Load a XNB file
-                //Loads from Assets directory + /assetName
-			    Stream assetStream = File.Open(assetName, FileMode.Open, FileAccess.Read);
-               
-                ContentReader reader = new ContentReader(this, assetStream, this.graphicsDeviceService.GraphicsDevice);
-				ContentTypeReaderManager typeManager = new ContentTypeReaderManager(reader);
-				reader.TypeReaders = typeManager.LoadAssetReaders(reader);
-	            foreach (ContentTypeReader r in reader.TypeReaders)
-	            {
-	                r.Initialize(typeManager);
-	            }
-	            // we need to read a byte here for things to work out, not sure why
-	            reader.ReadByte();
-				
-				// Get the 1-based index of the typereader we should use to start decoding with
-          		int index = reader.ReadByte();
-				ContentTypeReader contentReader = reader.TypeReaders[index - 1];
-           		result = reader.ReadObject<T>(contentReader);
-
-				reader.Close();
-				assetStream.Close();
-			}
-						
-			if (result == null)
-			{	
-				throw new ContentLoadException("Could not load "  + originalAssetName + " asset!");
-			}
-			
-			return (T) result;
+            return null;
         }
-		
+
+        // GG EDIT added
+        // reads an asset asynchronously, communicating it back via the Action
+        protected void ReadAssetAsync<T>(string assetName, Action<IDisposable> recordDisposableObject, Action<T> loadAction)
+        {
+            object earlyAsset = ReadAssetPrelim<T>(assetName);
+            if (earlyAsset != null)
+            {
+                loadAction((T)earlyAsset);
+                return;
+            }
+
+            OpenStreamAsync(assetName,
+                delegate(System.IO.Stream assetStream) {
+                    T obj = ReadAsset<T>(assetName, assetStream, recordDisposableObject);
+                    loadAction(obj);
+                });
+        }
+
+        protected T ReadAsset<T>(string assetName, Action<IDisposable> recordDisposableObject)
+        {
+            object earlyAsset = ReadAssetPrelim<T>(assetName);
+            if (earlyAsset != null)
+                return (T)earlyAsset;
+
+            System.IO.Stream assetStream = OpenStream(assetName);
+            return ReadAsset<T>(assetName, assetStream, recordDisposableObject);
+        }
+
+        private T ReadAsset<T>(string assetName, System.IO.Stream assetStream, 
+                               Action<IDisposable> recordDisposableObject)
+        {
+            // GG EDIT removed code for loading raw assets like pngs
+
+            // Load a XNB file
+            ContentReader reader = new ContentReader(this, assetStream, this.graphicsDeviceService.GraphicsDevice);
+            ContentTypeReaderManager typeManager = new ContentTypeReaderManager(reader);
+            reader.TypeReaders = typeManager.LoadAssetReaders(reader);
+            foreach (ContentTypeReader r in reader.TypeReaders)
+            {
+                r.Initialize(typeManager);
+            }
+            // we need to read a byte here for things to work out, not sure why
+            byte dummy = reader.ReadByte();
+            System.Diagnostics.Debug.Assert(dummy == 0);
+
+            // Get the 1-based index of the typereader we should use to start decoding with
+            int index = reader.ReadByte();
+            ContentTypeReader contentReader = reader.TypeReaders[index - 1];
+            object result = reader.ReadObject<T>(contentReader);
+
+            reader.Close();
+            assetStream.Close();
+
+            if (result == null)
+            {
+                throw new ContentLoadException("Could not load " + assetName + " asset!");
+            }
+
+            // GG EDIT added IDisposable recording
+            T tresult = (T)result;
+            if (tresult is IDisposable)
+            {
+                if (recordDisposableObject == null)
+                {
+                    // GG TODO: would call local method here
+                }
+                else
+                {
+                    recordDisposableObject((IDisposable)tresult);
+                }
+            }
+
+            return tresult;
+        }
+
+        protected string figureOutExtension(string originalAssetName)
+        {
+            //Lowercase assetName (monodroid specification all assests are lowercase)
+            // Check for windows-style directory separator character
+            originalAssetName = Path.Combine(_rootDirectory, originalAssetName.Replace('\\', Path.DirectorySeparatorChar));
+
+            // GG EDIT just assuming all our assets are xnb files...
+            if (File.Exists(originalAssetName + ".xnb"))//GG TODO
+                return originalAssetName + ".xnb";
+
+            return null;
+        }
+
+        // GG EDIT added
+        // opens a stream asynchronously, calling the callback when the contents of the file are completely in
+        // a buffer in memory (only intended for small files)
+        protected virtual void OpenStreamAsync(string assetName, Action<System.IO.Stream> openAction)
+        {
+            // GG EDIT just assuming all our assets are xnb files...
+            assetName = Path.Combine(_rootDirectory, assetName.Replace('\\', Path.DirectorySeparatorChar));
+            assetName = assetName + ".xnb";
+
+            new AsyncFileBuffer(assetName,
+                delegate(AsyncFileBuffer r)
+                {
+                    // this delegate is very likely to be called in a non-main thread
+                    // so we wrap all the data into a thunk and have the main thread
+                    // ask for it whenever it wants it
+                    lock(mainThreadCallbacks) {
+                        mainThreadCallbacks.Enqueue(delegate()
+                        {
+                            openAction(r.Stream);
+                        });
+                    }
+                });
+        }
+
+        protected virtual System.IO.Stream OpenStream(string originalAssetName)
+        {
+            string assetName = figureOutExtension(originalAssetName);
+            if (string.IsNullOrEmpty(assetName))
+            {
+                // this usually means that the asset was meant to be already loaded from a package but 
+                // the package loading failed for some reasons that didn't terminate the program
+                throw new ContentLoadException("Could not OpenStream on " + originalAssetName+" "+ Directory.GetCurrentDirectory());
+            }
+            System.IO.Stream s = File.Open(assetName, System.IO.FileMode.Open, System.IO.FileAccess.Read);
+            return s;
+        }
+
 		
         public virtual void Unload()
         {

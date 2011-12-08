@@ -41,7 +41,11 @@
 
 using System;
 
+#if NACL
+using OpenTK.Graphics.ES20;
+#else
 using OpenTK.Graphics.OpenGL;
+#endif
 
 using Microsoft.Xna.Framework.Graphics;
 
@@ -49,6 +53,16 @@ namespace Microsoft.Xna.Framework
 {
 	public sealed class RenderState
 	{
+        //GG TODO
+        public bool StencilEnable;
+        public bool SeparateAlphaBlendEnabled;
+        public int ReferenceStencil;
+        public CompareFunction StencilFunction;
+        public StencilOperation StencilPass;
+        public ColorWriteChannels ColorWriteChannels;
+      
+        //END GG TODO
+
 
 		private bool _alphaBlendEnable;
 		
@@ -66,11 +80,13 @@ namespace Microsoft.Xna.Framework
 					
 					if (_alphaBlendEnable)
 					{
-						GL.Enable(EnableCap.AlphaTest);
+                        // GG EDIT not part of GLES 2
+						//GL.Enable(EnableCap.AlphaTest);
 					}
 					else
 					{
-						GL.Disable(EnableCap.AlphaTest);
+                        // GG EDIT not part of GLES 2
+						//GL.Disable(EnableCap.AlphaTest);
 					}
 				}
 			}

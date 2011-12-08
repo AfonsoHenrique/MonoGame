@@ -26,12 +26,15 @@ SOFTWARE.
 #endregion License
 
 using System;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Drawing;
+#if NACL
+using OpenTK.Graphics.ES20;
+#else
 using OpenTK.Graphics.OpenGL;
+#endif
 
 using Microsoft.Xna;
 using Microsoft.Xna.Framework;
@@ -47,36 +50,6 @@ namespace Microsoft.Xna.Framework.Content
             // Do nothing
         }
 
-		public static string Normalize(string FileName)
-		{
-            if (File.Exists(FileName))
-                return FileName;
-
-            // Check the file extension
-            if (!string.IsNullOrEmpty(Path.GetExtension(FileName)))
-            {
-                return null;
-            }
-
-            // Concat the file name with valid extensions
-            if (File.Exists(FileName + ".xnb"))
-                return FileName + ".xnb";
-            if (File.Exists(FileName + ".jpg"))
-                return FileName + ".jpg";
-            if (File.Exists(FileName + ".bmp"))
-                return FileName + ".bmp";
-            if (File.Exists(FileName + ".jpeg"))
-                return FileName + ".jpeg";
-            if (File.Exists(FileName + ".png"))
-                return FileName + ".png";
-            if (File.Exists(FileName + ".gif"))
-                return FileName + ".gif";
-            if (File.Exists(FileName + ".pict"))
-                return FileName + ".pict";
-			
-			return null;
-		}
-
         protected internal override Texture2D Read(ContentReader reader, Texture2D existingInstance)
 		{
 			Texture2D texture = null;
@@ -84,30 +57,40 @@ namespace Microsoft.Xna.Framework.Content
 			SurfaceFormat surfaceFormat = (SurfaceFormat)reader.ReadInt32 ();
 			int width = reader.ReadInt32();
 			int height = reader.ReadInt32();
-			int levelCount = reader.ReadInt32();
+			/*int levelCount =*/ reader.ReadInt32();
 			int imageLength = reader.ReadInt32();
 						
 			byte[] imageData = reader.ReadBytes(imageLength);
-			
-			switch(surfaceFormat)
+                        
+#if NO_DXT35
+            System.Diagnostics.Stopwatch sw2 = new System.Diagnostics.Stopwatch();
+            sw2.Reset();
+            sw2.Start();
+            // GG TODO need to remove this manual decompression KTHX
+            switch(surfaceFormat)
 			{
-				case SurfaceFormat.Dxt1: imageData = DxtUtil.DecompressDxt1(imageData, width, height); break;
-				case SurfaceFormat.Dxt3: imageData = DxtUtil.DecompressDxt3(imageData, width, height); break;
-			}				
-			
-			IntPtr imagePtr = IntPtr.Zero;
-			
-			try 
-			{
-				imagePtr = Marshal.AllocHGlobal (imageData.Length);
-				Marshal.Copy (imageData, 0, imagePtr, imageData.Length);					
-				ESTexture2D esTexture = new ESTexture2D (imagePtr, surfaceFormat, width, height, new Size (width, height), All.Linear);
-				texture = new Texture2D (new ESImage (esTexture));
-			}
-			finally 
-			{		
-				Marshal.FreeHGlobal (imagePtr);
-			}
+                case SurfaceFormat.Dxt1: imageData = DxtUtil.DecompressDxt1(imageData, width, height); surfaceFormat = SurfaceFormat.Rgba32; break;
+                case SurfaceFormat.Dxt3: imageData = DxtUtil.DecompressDxt3(imageData, width, height); surfaceFormat = SurfaceFormat.Rgba32; break;
+			}	
+            if (sw2.ElapsedMilliseconds > 16)
+            {
+                GSGE.Debug.logMessage("Surface Format decompression took " + sw2.ElapsedMilliseconds);
+            }
+#endif
+                       
+            unsafe
+            {
+                fixed (byte* pData = imageData)
+                {
+                    ESTexture2D esTexture = new ESTexture2D((IntPtr)pData, 
+                        imageData.Length, 
+                        surfaceFormat, 
+                        width, height, 
+                        new Size(width, height), 
+                        All.Linear);
+                    texture = new Texture2D(new ESImage(esTexture));
+                }
+            }
 			
 			return texture;
 		}

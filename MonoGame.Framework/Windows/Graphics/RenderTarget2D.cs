@@ -40,33 +40,65 @@
 
 using System;
 
+#if NACL
+using OpenTK.Graphics.ES20;
+#else
 using OpenTK.Graphics.OpenGL;
-
+#endif
 namespace Microsoft.Xna.Framework.Graphics
 {
-    // modified to inherit directly from Texture2D as per
-    // http://blogs.msdn.com/b/shawnhar/archive/2010/03/26/rendertarget-changes-in-xna-game-studio-4-0.aspx
-    // 	and
-    // http://msdn.microsoft.com/en-us/library/bb198676.aspx
-    //
     public class RenderTarget2D : Texture2D
-    {
-
+	{
+        //GG EDIT
+        public uint framebufferID;
+        
         public RenderTarget2D(GraphicsDevice graphicsDevice, int width, int height)
-            : this(graphicsDevice, width, height, false, SurfaceFormat.Color, DepthFormat.None)
+            : this(graphicsDevice, width, height, false, SurfaceFormat.Color, DepthFormat.Unknown)
         { }
 
         public RenderTarget2D(GraphicsDevice graphicsDevice, int width, int height, bool mipMap,
             SurfaceFormat preferredFormat, DepthFormat preferredDepthFormat)
             : this(graphicsDevice, width, height, mipMap, preferredFormat,
-                DepthFormat.None, 0, RenderTargetUsage.PreserveContents)
+                DepthFormat.Unknown, 0, RenderTargetUsage.PreserveContents)
+        { }
+
+        public RenderTarget2D(
+            GraphicsDevice graphicsDevice, int width, int height, int numberLevels,
+            SurfaceFormat format, MultiSampleType multiSampleType, int multiSampleQuality)
+            : this(graphicsDevice, width, height, numberLevels > 1, format,
+                   DepthFormat.Unknown, 0, RenderTargetUsage.PreserveContents)
         { }
 
         public RenderTarget2D(GraphicsDevice graphicsDevice, int width, int height, bool mipMap,
             SurfaceFormat preferredFormat, DepthFormat preferredDepthFormat, int preferredMultiSampleCount, RenderTargetUsage usage)
             : base(graphicsDevice, width, height, mipMap, preferredFormat)
         {
-            //allocateOpenGLTexture();
+            allocateOpenGLTexture();
+
+
+            // GG EDIT
+            framebufferID = 0;
+            GL.GenFramebuffers(1, out framebufferID);
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, framebufferID);
+            GL.FramebufferTexture2D(FramebufferTarget.Framebuffer,
+#if NACL
+                FramebufferSlot.ColorAttachment0,
+#else
+                FramebufferAttachment.ColorAttachment0,
+#endif
+                TextureTarget.Texture2D, 
+                textureId, 
+                0);
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+
+#if DEBUG
+            // GG EDIT added this assert
+            FramebufferErrorCode err = GL.CheckFramebufferStatus(FramebufferTarget.Framebuffer);
+            if (err != FramebufferErrorCode.FramebufferComplete)
+            {
+                throw new ApplicationException("Framebuffer set up improperly");
+            }
+#endif
         }
 
         private void allocateOpenGLTexture()
@@ -75,19 +107,14 @@ namespace Microsoft.Xna.Framework.Graphics
             // http://steinsoft.net/index.php?site=Programming/Code%20Snippets/OpenGL/no9
 
             // Allocate the space needed for the texture
-            GL.BindTexture(TextureTarget.Texture2D, this._textureId);
-
-            // it seems like we do not need to allocate any buffer space
-            //byte[] data = new byte[_width * _height * 4];
-            // Use offset instead of pointer to indictate that we want to use data copied from a PBO 
-            //GL.TexImage2D (TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, _width, _height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, data);
+            GL.BindTexture(TextureTarget.Texture2D, this.textureId);
             GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, _width, _height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, IntPtr.Zero);
-
             GL.BindTexture(TextureTarget.Texture2D, 0);
-            //data = null;
-
         }
 
-
-    }
+        public Texture2D GetTexture()
+        {
+            return this; // GG TODO
+        }
+	}
 }

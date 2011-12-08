@@ -40,30 +40,11 @@
 // 
 
 using System;
-using System.IO;
 using System.Linq;
 
 namespace Microsoft.Xna.Framework
 {
 	internal class SongReader
 	{
-		public static string Normalize(string FileName)
-        {
-            if (File.Exists(FileName))
-                return FileName;
-
-            // Check the file extension
-            if (!string.IsNullOrEmpty(Path.GetExtension(FileName)))
-            {
-                return null;
-            }
-
-            // Concat the file name with valid extensions
-            if (File.Exists(FileName + ".mp3"))
-                return FileName + ".mp3";
-			
-			return null;
-		}
-
 	}
 }

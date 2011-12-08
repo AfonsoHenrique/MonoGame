@@ -22,8 +22,9 @@ namespace Microsoft.Xna.Framework.Graphics
         public EffectPass this[int index]
         {
             get { return _passes[index]; }
-            set { 
-				_passes[index] = value; 
+            set 
+            {
+                _passes.Insert(index, value);//GG EDIT
 			}
         }
 

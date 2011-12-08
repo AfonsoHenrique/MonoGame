@@ -46,22 +46,55 @@ namespace Microsoft.Xna.Framework.Graphics
 {
     public sealed class GraphicsAdapter : IDisposable
     {
+
+  
+
         private static ReadOnlyCollection<GraphicsAdapter> adapters;
+        private DisplayMode _displayMode;
         
         internal GraphicsAdapter()
         {
+            _displayMode = new DisplayMode(OpenTK.DisplayDevice.Default);
         }
         
         public void Dispose()
         {
         }
 
+        public bool CheckDepthStencilMatch(
+            DeviceType deviceType,
+            SurfaceFormat adapterFormat,
+            SurfaceFormat renderTargetFormat,
+            DepthFormat depthStencilFormat)
+        {
+            //GG TODO
+            // see http://www.khronos.org/registry/gles/extensions/OES/OES_packed_depth_stencil.txt
+            // we need to actually check with the driver here but this is probably an OK default
+            return depthStencilFormat == DepthFormat.Depth24Stencil8;
+        }
+
+        public bool CheckDeviceMultiSampleType(
+            DeviceType deviceType,
+            SurfaceFormat surfaceFormat,
+            bool isFullScreen,
+            MultiSampleType sampleType,
+            out int qualityLevels)
+        {
+            //GG TODO
+            qualityLevels = 0;
+            return false;
+        }
+ 
+
         public DisplayMode CurrentDisplayMode
         {
             get
             {
-                // figure out the display mode
-                return new DisplayMode();
+                return _displayMode;
+            }
+            internal set
+            {
+                _displayMode = value;
             }
         }
 
