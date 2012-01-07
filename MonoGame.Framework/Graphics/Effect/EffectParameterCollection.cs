@@ -8,18 +8,18 @@ namespace Microsoft.Xna.Framework.Graphics
     public class EffectParameterCollection : IEnumerable<EffectParameter>
     {
         internal Dictionary<string, EffectParameter> _parameters = new Dictionary<string, EffectParameter>();
-        List<string> names = new List<string>();
+        internal List<string> _names = new List<string>();
 
         public EffectParameter this[int index]
         {
             get
             {
-                return _parameters[names[index]];
+                return _parameters[_names[index]];
             }
             set
             {
                 this[value.Name] = value;
-                names.Insert(index, value.Name);
+                _names.Insert(index, value.Name);
             }
         }
 
@@ -37,7 +37,7 @@ namespace Microsoft.Xna.Framework.Graphics
             set 
             {
                 _parameters[name] = value;
-                names.Insert(value.internalIndex, value.Name);
+                _names.Add ( value.Name );
             }
         }
 

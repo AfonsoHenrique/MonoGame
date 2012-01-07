@@ -130,7 +130,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			this.paramClass = paramClass;
 			this.rowCount = rowCount;
 			this.colCount = colCount;
-			this._cachedValue = _cachedValue;
+			this._cachedValue = cachedValue;
 
 		}
 

@@ -26,7 +26,6 @@ SOFTWARE.
 #endregion License
 
 using System;
-using OpenTK;
 
 namespace Microsoft.Xna.Framework
 {
@@ -215,16 +214,6 @@ namespace Microsoft.Xna.Framework
 
 
         #region Public Methods
-
-        // GG EDIT added
-        public Matrix4 ToMatrix4()
-        {
-            return new Matrix4(
-                M11, M12, M13, M14,
-                M21, M22, M23, M24,
-                M31, M32, M33, M34,
-                M41, M42, M43, M44);
-        }
 
         public static Matrix Add(Matrix matrix1, Matrix matrix2)
         {
