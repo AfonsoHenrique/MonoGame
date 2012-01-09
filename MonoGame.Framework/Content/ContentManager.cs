@@ -62,6 +62,7 @@ namespace Microsoft.Xna.Framework.Content
         private IServiceProvider serviceProvider;
 		private IGraphicsDeviceService graphicsDeviceService;
 		private Dictionary<string,object> _loadedAssets;
+		private bool _disposed;
 		
         public ContentManager(IServiceProvider serviceProvider)
 			: this( serviceProvider, "" )
@@ -80,10 +81,28 @@ namespace Microsoft.Xna.Framework.Content
             this.RootDirectory = rootDirectory;
             this.serviceProvider = serviceProvider;
 			_loadedAssets = new Dictionary<string, object>( INITIAL_CAPACITY );
+			_disposed = false;
         }
-
+		
+		internal void UnloadAll()
+		{
+			foreach( var assetName in _loadedAssets.Keys )
+			{
+				IDisposable disposable = _loadedAssets[assetName] as IDisposable;
+				if ( disposable != null )
+					disposable.Dispose();
+			}
+			_loadedAssets.Clear();
+		}
+		
         public void Dispose()
         {
+			if ( !_disposed )
+			{
+				UnloadAll();
+				_disposed = true;
+			}
+			GC.SuppressFinalize(this);
         }
 		
 		internal static string CleanPath( string path )
@@ -123,15 +142,26 @@ namespace Microsoft.Xna.Framework.Content
 		
         public virtual void Unload()
         {
+			UnloadAll();
         }
 		
 		protected virtual Stream OpenStream( string assetName )
 		{
-			return new FileStream(assetName, FileMode.Open, FileAccess.Read, FileShare.Read);
+			try
+			{
+				return new FileStream(assetName, FileMode.Open, FileAccess.Read, FileShare.Read);
+			}
+			catch (Exception ex )
+			{
+				throw new ContentLoadException( "Unable to load: " + assetName, ex );
+			}
 		}
 		
 		protected T ReadAsset<T> ( string assetName, Action<IDisposable> recordDisposableObject )
 		{
+			if ( _disposed )
+				throw new ObjectDisposedException(this.GetType().ToString());
+			
 			string originalAssetName = assetName;
 			object result = null;
 			
