@@ -62,16 +62,10 @@ namespace Microsoft.Xna.Framework.Content
         private IServiceProvider serviceProvider;
 		private IGraphicsDeviceService graphicsDeviceService;
 		private Dictionary<string,object> _loadedAssets;
-
+		
         public ContentManager(IServiceProvider serviceProvider)
-        {
-			if (serviceProvider == null)
-            {
-                throw new ArgumentNullException("serviceProvider");
-            }
-            this.serviceProvider = serviceProvider;
-			_loadedAssets = new Dictionary<string, object>( INITIAL_CAPACITY );
-		}
+			: this( serviceProvider, "" )
+        { }
 
         public ContentManager(IServiceProvider serviceProvider, string rootDirectory)
         {
