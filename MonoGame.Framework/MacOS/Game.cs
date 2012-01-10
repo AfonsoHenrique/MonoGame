@@ -454,19 +454,29 @@ namespace Microsoft.Xna.Framework
 				return this.graphicsDeviceService.GraphicsDevice;
 			}
 		}
-
+		
+		protected virtual void OnActivated( Object sender, EventArgs args )
+		{
+			if (Activated != null)
+				Activated.Invoke (sender, args);
+		}
+		
+		protected virtual void OnDecativated( Object sender, EventArgs args )
+		{
+			if (Deactivated != null)
+				Deactivated.Invoke (sender, args);
+		}
+		
 		public void EnterBackground ()
 		{
 			_isActive = false;
-			if (Deactivated != null)
-				Deactivated.Invoke (this, null);
+			OnDecativated( this, EventArgs.Empty );
 		}
 
 		public void EnterForeground ()
 		{
 			_isActive = true;
-			if (Activated != null)
-				Activated.Invoke (this, null);
+			OnActivated ( this, EventArgs.Empty );
 		}
 
 		protected virtual bool BeginDraw ()
@@ -740,9 +750,16 @@ namespace Microsoft.Xna.Framework
 				}
 			}
 		}
-
+		
+		protected virtual void OnExiting( Object sender, EventArgs args )
+		{
+			if ( Exiting != null )
+				Exiting.Invoke( sender, args );
+		}
+		
 		public void Exit ()
 		{
+			OnExiting( this, EventArgs.Empty );
 			NSApplication.SharedApplication.Terminate(new NSObject());
 		}
 
