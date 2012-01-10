@@ -887,6 +887,9 @@ namespace Microsoft.Xna.Framework.Graphics
 
 			throw new NotSupportedException ();
 		}
-
+		
+		#region Events
+		public event EventHandler DeviceReset;
+		#endregion
 	}
 }

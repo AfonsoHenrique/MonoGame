@@ -96,7 +96,13 @@ namespace Microsoft.Xna.Framework.Graphics
                 return adapters;
             }
         } 
-
+		
+		public bool CheckDeviceMultiSampleType( DeviceType deviceType, SurfaceFormat surfaceFormat, bool isFullScreen, MultiSampleType sampleType, out int qualityLevels )
+		{
+			qualityLevels = 0;
+			return false;
+		}
+		
         public string Description
         {
             get
