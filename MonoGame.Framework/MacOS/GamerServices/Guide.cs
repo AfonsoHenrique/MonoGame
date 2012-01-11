@@ -53,6 +53,10 @@ using Microsoft.Xna.Framework.Storage;
 
 namespace Microsoft.Xna.Framework.GamerServices
 {
+	public class GuideAlreadyVisibleException : Exception
+	{
+	}
+	
 	public static class Guide
 	{
 		private static bool isScreenSaverEnabled;
