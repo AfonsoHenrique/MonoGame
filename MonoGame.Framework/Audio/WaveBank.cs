@@ -43,8 +43,12 @@ namespace Microsoft.Xna.Framework.Audio
         private bool mIsLoaded = false;
         public bool IsLoaded { get { return mIsLoaded; } }
 		internal AudioEngine mAudioEngine;
+	
+		public WaveBank(AudioEngine audioEngine, string nonStreamingWaveBankFilename)
+			: this( audioEngine, nonStreamingWaveBankFilename, 0, 8 )
+		{ }
 		
-        public WaveBank(AudioEngine audioEngine, string nonStreamingWaveBankFilename)
+        public WaveBank(AudioEngine audioEngine, string nonStreamingWaveBankFilename, int offset, short packetSize)
         {
 #if !NO_FMOD
             int start = nonStreamingWaveBankFilename.LastIndexOf('/') + 1;
@@ -142,6 +146,7 @@ namespace Microsoft.Xna.Framework.Audio
             continueReadingSounds();
         }
 
+		/*
         public WaveBank(AudioEngine audioEngine, string streamingWaveBankFilename, bool streamToPersist)
         {
 #if !NO_FMOD
@@ -212,6 +217,7 @@ namespace Microsoft.Xna.Framework.Audio
             }, null);
 #endif
         }
+        */
 
         public bool IsDisposed
         {
