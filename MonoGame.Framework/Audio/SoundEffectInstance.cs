@@ -167,24 +167,7 @@ namespace Microsoft.Xna.Framework.Audio
 			}
 		}
 		
-		public float Pitch         
-		{             
-	            get
-	            {
-					if ( _sound != null)
-				    {
-	                   return _sound.Rate;
-				    }
-				    return 0.0f;
-	            }
-	            set
-	            {
-				    if ( _sound != null && _sound.Rate != value)
-				    {
-	                   _sound.Rate = value;
-				    } 
-	            }        
-		 }
+		public float Pitch { get; set; }
 		
 		private Sound _sound;
 		internal Sound Sound 
@@ -235,8 +218,6 @@ namespace Microsoft.Xna.Framework.Audio
 					}
 				}
 			}
-		}	
-		
-		
+		}		
 	}
 }

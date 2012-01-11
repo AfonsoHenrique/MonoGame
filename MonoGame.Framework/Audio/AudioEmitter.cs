@@ -44,6 +44,8 @@ namespace Microsoft.Xna.Framework.Audio
 {
 	public class AudioEmitter
 	{
+        public Vector3 Position = Vector3.Zero;  // GG TODO
+
 		public AudioEmitter ()
 		{
 		}

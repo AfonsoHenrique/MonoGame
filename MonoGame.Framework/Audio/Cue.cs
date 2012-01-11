@@ -39,89 +39,253 @@ purpose and non-infringement.
 #endregion License
 
 using System;
+using System.Diagnostics;
+using System.Collections.Generic;
+using System.Text;
 
 namespace Microsoft.Xna.Framework.Audio
 {
-	public class Cue : IDisposable
-	{
-		private string _name;
-		private Sound _sound;
-		private bool _paused = false;
+    // instance of a cue, so Playing works and stuff
+    public class Cue : IDisposable
+    {
+		internal static Random random = new Random();
 		
-		public bool IsPaused
+		internal static int RandomInt( int high )
 		{
-			get { return _paused; }
+			return random.Next( high );
 		}
 		
-		public bool IsPlaying
-		{
-			get { return _sound.Playing; }
-		}
+        internal  CueData mData;
+        internal SoundHelperInstance mSound;
+        private int currIdx = 0;
+        private float mDistance = 0.0f;
+        internal AudioEngine mAudioEngine;
 		
-		public bool IsStopped
-		{
-			get { return !_sound.Playing; }
-		}
-		
-		public string Name
-		{
-			get { return _name; }
-		}
-		
-		internal Cue(string cuename, Sound sound)
-		{
-			_name = cuename;
-			_sound = sound;
-		}
-		
-		public void Pause()
-		{
-			_sound.Pause();
-			_paused = true;
-		}
-		
-		public void Play()
-		{
-			_sound.Play();
-			_paused = false;
-		}
-		
-		public void Resume()
-		{
-			_sound.Play();
-			_paused = false;
-		}
-		
-		public void Stop(AudioStopOptions options)
-		{
-			_sound.Stop();
-			_paused = false;
-		}
-		
-		public void SetVariable(string name, float value)
-		{
-			if (name == "Volume") {
-				_sound.Volume = value;
-			} else {
-				throw new NotImplementedException();
-			}
-		}
-		
-		public float GetVariable(string name, float value)
-		{
-			if (name == "Volume") {
-				return _sound.Volume;
-			} else {
-				throw new NotImplementedException();
-			}
-		}
-		
-		#region IDisposable implementation
-		public void Dispose ()
-		{
-			_sound.Dispose();
-		}
-		#endregion
-	}
+		internal Cue(CueData data, AudioEngine engine)
+        {
+            Debug.Assert(data != null);
+            mData = data;
+			mAudioEngine = engine;
+        }
+        public bool IsPaused
+        {
+            get { return mSound != null && mSound.Paused; }
+        }
+
+        public bool IsPlaying
+        {
+            get { return mSound != null && mSound.Playing; }
+        }
+
+        public bool IsStopped
+        {
+            get { return mSound == null || !mSound.Playing; }
+        }
+
+        public string Name
+        {
+            get { return mData.Name; }
+        }
+        public void Pause()
+        {
+            if (mSound != null)
+                mSound.Pause();
+        }
+
+        public void Play()
+        {
+            // purge old instances when we need to limit instances
+            if (mData._maxInstances != -1 && mData.totalPlays > 0)
+            {
+                float scalar = mData.totalInstances / mData.totalPlays;
+                int max = (int)(scalar * mData._maxInstances);
+
+                if (max <= mData.instances.Count)
+                {
+                    for (int i = mData.instances.Count - 1; i >= 0; i--)
+                    {
+                        if (!mData.instances[i].Playing)
+                        {
+                            mData.instances.RemoveAt(i);
+                        }
+                    }
+
+                    // Bastion's only usage case is Behavior 0 = Fail to Play
+                    if (max <= mData.instances.Count)
+                    {
+                        return;
+                    }
+                }
+            }
+
+            switch (mData._variation)
+            {
+                case 0: //kOrdered
+                    mData.currIdx++;
+                    if (mData.currIdx >= mData._sounds.Length)
+                        mData.currIdx = 0;
+                    break;
+                case 2://kRandom
+                    mData.currIdx = RandomInt(mData._sounds.Length);
+                    break;
+                case 3://kRandomNoImmediateRepeat
+
+                    int newIdx = RandomInt(mData._sounds.Length - 1);
+                    if (newIdx >= mData.currIdx)
+                        mData.currIdx = newIdx + 1;
+                    else
+                        mData.currIdx = newIdx;
+
+                    break;
+                case 4://kShuffle
+                    mData.shuffleIdx++;
+                    if (mData.shuffleIdx >= mData._sounds.Length)
+                    {
+                        mData.shuffleIdx = 0;
+
+                        int i;
+
+                        // reorder next random set
+                        List<int> ls = new List<int>();
+                        for (i = 0; i < mData._sounds.Length; i++)
+                        {
+                            ls.Add(i);
+                        }
+
+                        i = 0;
+                        while (ls.Count > 0)
+                        {
+                            int idx = RandomInt(ls.Count);
+                            mData.shuffle[i] = ls[idx];
+                            ls.RemoveAt(idx);
+                            i++;
+                        }
+                    }
+                    mData.currIdx = mData.shuffle[mData.shuffleIdx];
+                    break;
+                default:
+                    throw new NotImplementedException();
+
+            }
+
+            int instancesCount = mData.instances.Count;
+            currIdx = mData.currIdx;
+            if (mSound != null)
+               mSound.Dispose();
+            mSound = new SoundHelperInstance(mData._sounds[mData.currIdx],mAudioEngine);
+            mSound.Play(this);
+
+            // keep track of when multi-track things play, because they muck with my lousy maxInstances impl
+            mData.totalPlays++;
+            mData.totalInstances += mData.instances.Count - instancesCount;
+
+            // don't track instances if we don't limit them
+            if (mData._maxInstances == -1)
+                mData.instances.Clear();
+        }
+
+        public void Resume()
+        {
+            if (mSound.Paused)
+                mSound.Play(this);
+        }
+
+        public void Stop(AudioStopOptions options)
+        {
+            if (mSound != null)
+                mSound.Stop();
+        }
+
+        public void SetVariable(string name, float value)
+        {
+            if (name == "Distance")
+                mDistance = value;
+            else
+                throw new NotImplementedException();
+        }
+
+        public float GetVariable(string name)
+        {
+            if (name == "Distance")
+                return mDistance;
+            else
+                throw new NotImplementedException();
+        }
+
+        public void Apply3D(AudioListener listener, AudioEmitter emitter)
+        {
+            SetVariable("Distance", (listener.Position - emitter.Position).Length());
+        }
+
+        public void Dispose()
+        {
+            if (mSound != null)
+            {
+                mSound.Dispose();
+                mSound = null;
+            }
+            mData = null;
+        }
+        public bool IsDisposed
+        {
+            get
+            {
+                return mData == null;
+            }
+        }
+    }
+
+    public class CueData
+    {
+        private string _name;
+        internal SoundHelper[] _sounds;
+        internal System.Collections.Generic.List<Sound> instances = new System.Collections.Generic.List<Sound>();
+
+        internal int _variation;
+        internal int currIdx;
+        internal int[] shuffle;
+        internal int shuffleIdx;
+        internal int _maxInstances;
+        internal int totalInstances;
+        internal int totalPlays;
+        internal SoundBank bank;
+
+        public string Name
+        {
+            get { return _name; }
+        }
+
+        internal CueData(System.IO.BinaryReader reader, SoundHelper[] sounds, SoundBank b)
+        {
+            bank = b;
+
+            int strLen = reader.ReadInt16();
+            byte[] bytes = reader.ReadBytes((int)strLen);
+            _name = Encoding.ASCII.GetString(bytes);
+
+            int variation = reader.ReadInt32();
+            int soundCount2 = reader.ReadInt32();
+            _sounds = new SoundHelper[soundCount2];
+            for (int j = 0; j < soundCount2; j++)
+            {
+                int index = reader.ReadInt32();
+                _sounds[j] = sounds[index];
+            }
+
+            _maxInstances = reader.ReadInt32();
+
+
+            // funnel fixed sound cues to a specific variation so I don't have to deal with it for others
+            if (_sounds.Length == 1)
+                _variation = 0;
+            else if (_variation == 4)
+            {
+                shuffle = new int[_sounds.Length];
+                shuffleIdx = _sounds.Length;
+            }
+            // give it an invalid initial cue idx so nothing is assumed about its previous play
+            currIdx = _sounds.Length;
+        }
+    }
 }
 

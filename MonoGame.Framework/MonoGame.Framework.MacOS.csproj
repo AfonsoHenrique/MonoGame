@@ -343,6 +343,26 @@
     <Compile Include="MacOS\Graphics\Effect\VSBasicEffectcs" />
     <Compile Include="Graphics\Vertices\VertexElementColor.cs" />
     <Compile Include="Graphics\Vertices\IndexElementSize.cs" />
+    <Compile Include="Audio\AudioCategory.cs" />
+    <Compile Include="MacOS\Audio\SoundHelper.cs" />
+    <Compile Include="..\ThirdParty\FMOD\fmod.cs">
+      <Link>Audio\FMOD\fmod.cs</Link>
+    </Compile>
+    <Compile Include="..\ThirdParty\FMOD\fmodInternal.cs">
+      <Link>Audio\FMOD\fmodInternal.cs</Link>
+    </Compile>
+    <Compile Include="..\ThirdParty\FMOD\fmod_dsp.cs">
+      <Link>Audio\FMOD\fmod_dsp.cs</Link>
+    </Compile>
+    <Compile Include="..\ThirdParty\FMOD\fmod_errors.cs">
+      <Link>Audio\FMOD\fmod_errors.cs</Link>
+    </Compile>
+    <Compile Include="..\ThirdParty\FMOD\fmod_memoryinfo.cs">
+      <Link>Audio\FMOD\fmod_memoryinfo.cs</Link>
+    </Compile>
+    <Compile Include="..\ThirdParty\FMOD\FMODexample.cs">
+      <Link>Audio\FMOD\FMODexample.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="MacOS\" />

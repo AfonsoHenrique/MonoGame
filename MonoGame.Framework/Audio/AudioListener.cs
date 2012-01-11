@@ -44,6 +44,10 @@ namespace Microsoft.Xna.Framework.Audio
 {
 	public class AudioListener
 	{
+        public Vector3 Position = Vector3.Zero; // GG TODO
+        public Vector3 Forward = Vector3.Forward; // GG TODO
+        public Vector3 Up = Vector3.Up; // GG TODO
+
 		public AudioListener ()
 		{
 		}

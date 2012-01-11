@@ -26,77 +26,70 @@ SOFTWARE.
 #endregion License
 
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Text;
+
 namespace Microsoft.Xna.Framework.Audio
 {
-    public class SoundBank : IDisposable
+    public class SoundBank
     {
-        string name;
-        string targetname;
-        string[] cues;
+        public System.Collections.Generic.List<SoundHelperInstance> instances = new System.Collections.Generic.List<SoundHelperInstance>();
+        SoundHelper[] sounds;
+        CueData[] cues;
         AudioEngine audioengine;
-        
+
         public SoundBank(AudioEngine audioEngine, string filename)
         {
             audioengine = audioEngine;
 
-            // Check for windows-style directory separator character
-            filename = filename.Replace('\\',Path.DirectorySeparatorChar);
+            System.IO.BinaryReader reader = new System.IO.BinaryReader(new FileStream(filename, System.IO.FileMode.Open));
 
-            BinaryReader soundbankreader = new BinaryReader(new FileStream(filename, FileMode.Open));
-            //byte[] identifier = soundbankreader.ReadBytes(4);
+            int version = reader.ReadInt32();
+            // anything else would be uncivilized -- run oggAct to correct this error
+            const int OSB_VERSION = 4;
+            Debug.Assert(version == OSB_VERSION, "rebuild your sound bank with oggact");
 
-            soundbankreader.BaseStream.Seek(30, SeekOrigin.Begin);
-            int cuelength = soundbankreader.ReadInt32();
+            int soundCount = reader.ReadInt32();
+            sounds = new SoundHelper[soundCount];
+            for (int i = 0; i < soundCount; i++)
+            {
+                sounds[i] = new SoundHelper(audioEngine, reader);
+            }
+            int cueCount = reader.ReadInt32();
+            cues = new CueData[cueCount];
+            for (int i = 0; i < cueCount; i++)
+            {
+                cues[i] = new CueData(reader, sounds, this);
+            }
 
-            soundbankreader.BaseStream.Seek(42, SeekOrigin.Begin);
-            int cueoffset = soundbankreader.ReadInt32();
-
-            soundbankreader.BaseStream.Seek(74, SeekOrigin.Begin);
-            name = System.Text.Encoding.UTF8.GetString(soundbankreader.ReadBytes(64)).Replace("\0","");
-
-            targetname = System.Text.Encoding.UTF8.GetString(soundbankreader.ReadBytes(64)).Replace("\0", "");
-
-            soundbankreader.BaseStream.Seek(cueoffset, SeekOrigin.Begin);
-
-            cues = System.Text.Encoding.UTF8.GetString(soundbankreader.ReadBytes(cuelength)).Split('\0');
+            audioEngine.SoundBanks.Add(this);
         }
-		
+
         public Cue GetCue(string name)
         {
             for (int i = 0; i < cues.Length - 1; i++)
             {
-                if (cues[i] == name)
+                if (cues[i].Name == name)
                 {
-                    foreach (WaveBank wavebank in audioengine.Wavebanks)
-                    {
-                        if (wavebank.BankName == targetname)
-                        {
-                            return new Cue(cues[i], wavebank.sounds[i]);
-                        }
-                    }
+                    return new Cue(cues[i],audioengine);
                 }
             }
-            throw new NotImplementedException();
+            return null;
         }
-		
-		public void PlayCue(string name)
-		{
-			var musicCue = GetCue(name);
-            musicCue.Play();
-		}
-		
-		public void PlayCue (string name, AudioListener listener, AudioEmitter emitter)
-		{
-			throw new NotImplementedException();
-		}
 
-		#region IDisposable implementation
-		public void Dispose ()
-		{
-			throw new NotImplementedException ();
-		}
-		#endregion
+        public void Update()
+        {
+            for (int i = 0; i < instances.Count; i++)
+            {
+                instances[i].Update();
+            }
+        }
+
+        public void Dispose()
+        {
+            audioengine.SoundBanks.Remove(this);
+        }
     }
 }
 

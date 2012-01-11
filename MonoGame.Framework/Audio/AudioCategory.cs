@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Diagnostics;
 using System.Text;
 
 namespace Microsoft.Xna.Framework.Audio
@@ -25,8 +26,7 @@ namespace Microsoft.Xna.Framework.Audio
             int volume = reader.ReadInt32(); // 100 * db
             int mBehavior = reader.ReadInt32();
             int mMaxInstances = reader.ReadInt32();
-            //GSGE.Debug.logMessage("category " + mName + " maxInstances = " + mMaxInstances);
-            GSGE.Debug.assert(mMaxInstances > 0);
+            Debug.Assert(mMaxInstances > 0);
 
             // XACT stores it as a 2 decimal fixed point value
             double attenuation_in_db = volume / 100.0f;
@@ -65,7 +65,7 @@ namespace Microsoft.Xna.Framework.Audio
 
         public void SetVolume(float gain)
         {
-            GSGE.Debug.assert(gain <= 1.0f);
+            Debug.Assert(gain <= 1.0f);
             // GG HAX make everything lounder
             gain *= 2.5f;
             mVolume = gain;
