@@ -78,7 +78,7 @@ namespace Microsoft.Xna.Framework.Content
 			
 			return null;
 		}
-		
+	
 		protected internal override Texture2D Read(ContentReader reader, Texture2D existingInstance)
 		{
 			Texture2D texture = null;
@@ -87,29 +87,21 @@ namespace Microsoft.Xna.Framework.Content
 			int width = (reader.ReadInt32 ());
 			int height = (reader.ReadInt32 ());
 			int levelCount = (reader.ReadInt32 ());
-			SetDataOptions compressionType = (SetDataOptions)reader.ReadInt32 ();
-			int imageLength = width * height * 4;
+			//SetDataOptions compressionType = (SetDataOptions)reader.ReadInt32 ();
+			int imageLength = (reader.ReadInt32()); //width * height * 4;
 			
-			if (surfaceFormat == SurfaceFormat.Dxt3)
+			byte[] imageBytes = reader.ReadBytes (imageLength);
+			IntPtr ptr = Marshal.AllocHGlobal( imageBytes.Length );
+			try 
 			{
-				ESTexture2D temp = ESTexture2D.InitiFromDxt3File(reader,imageLength,width,height);
-				texture = new Texture2D (new ESImage (temp));
+				Marshal.Copy (imageBytes, 0, ptr, imageBytes.Length );					
+				ESTexture2D temp = new ESTexture2D(ptr, imageBytes.Length, surfaceFormat, width, height, new Size (width, height), All.Linear);
+				texture = new Texture2D (new ESImage (temp));					
+			} 
+			finally 
+			{		
+				Marshal.FreeHGlobal (ptr);
 			}
-			else {
-				byte[] imageBytes = reader.ReadBytes (imageLength);
-				IntPtr ptr = Marshal.AllocHGlobal (imageLength);
-				try 
-				{
-					Marshal.Copy (imageBytes, 0, ptr, imageLength);					
-					ESTexture2D temp = new ESTexture2D(ptr, SurfaceFormat.Color, width, height, new Size (width, height), All.Linear);
-					texture = new Texture2D (new ESImage (temp));					
-				} 
-				finally 
-				{		
-					Marshal.FreeHGlobal (ptr);
-				}
-			}
-			
 			return texture;
 		}
     }
