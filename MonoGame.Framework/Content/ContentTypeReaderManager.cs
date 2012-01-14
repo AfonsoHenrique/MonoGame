@@ -62,27 +62,6 @@ namespace Microsoft.Xna.Framework.Content
             int numberOfReaders;
             ContentTypeReader[] contentReaders;
 
-            // The first 4 bytes should be the "XNBw" header. i use that to detect an invalid file
-            byte[] headerBuffer = new byte[4];
-            reader.Read(headerBuffer, 0, 4);
-
-            string headerString = Encoding.UTF8.GetString(headerBuffer, 0, 4);
-            if (string.Compare(headerString, "XNBw", StringComparison.InvariantCultureIgnoreCase) != 0)
-            {
-                throw new ContentLoadException("Asset does not appear to be a valid XNB file. Did you process your content for Windows?");
-            }
-
-            // I think these two bytes are some kind of version number. Either for the XNB file or the type readers
-            byte version = reader.ReadByte();
-            byte compressed = reader.ReadByte();
-            // The next int32 is the length of the XNB file
-            uint xnbLength = reader.ReadUInt32();
-
-            if (compressed != 0)
-            {
-                throw new NotImplementedException("MonoGame cannot read compressed XNB files. Please use the XNB files from the Debug build of your XNA game instead. If someone wants to contribute decompression logic, that would be fantastic.");
-            }
-
             // The next byte i read tells me the number of content readers in this XNB file
             numberOfReaders = reader.ReadByte();
             contentReaders = new ContentTypeReader[numberOfReaders];

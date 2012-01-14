@@ -148,7 +148,50 @@ namespace Microsoft.Xna.Framework.Content
 		protected virtual Stream OpenStream( string assetName )
 		{
 			try
-			{
+			{			
+				if (!string.IsNullOrEmpty(_rootDirectory)) 
+				{
+					assetName = _rootDirectory+Path.DirectorySeparatorChar+assetName;
+				}
+				/*
+				// Get the real file name
+				if ((typeof(T) == typeof(Curve))) 
+				{				
+					assetName = CurveReader.Normalize(assetName);
+				}
+				else if ((typeof(T) == typeof(Texture2D))) 
+				{				
+					assetName = Texture2DReader.Normalize(assetName);
+				}			
+				if ((typeof(T) == typeof(SpriteFont))) 
+				{
+					assetName = SpriteFontReader.Normalize(assetName);
+				}
+				if ((typeof(T) == typeof(Song))) 
+				{
+					assetName = SongReader.Normalize(assetName);
+				}
+				if ((typeof(T) == typeof(SoundEffect))) 
+				{
+					assetName = SoundEffectReader.Normalize(assetName);
+				}
+				if ((typeof(T) == typeof(Video))) 
+				{
+					assetName = Video.Normalize(assetName);
+				}
+				if ((typeof(T) == typeof(Effect))) 
+				{
+					assetName = Effect.Normalize(assetName);
+				}
+				
+				if (string.IsNullOrEmpty(assetName))
+				{	
+					throw new ContentLoadException("Could not load "  + originalAssetName + " asset!");
+				}
+				*/
+				if(!Path.HasExtension(assetName))
+					assetName = string.Format("{0}.xnb", assetName);
+				
 				return new FileStream(assetName, FileMode.Open, FileAccess.Read, FileShare.Read);
 			}
 			catch (Exception ex )
@@ -178,52 +221,9 @@ namespace Microsoft.Xna.Framework.Content
 			{
 				throw new ArgumentException("assetname");
 			}	
-			
-			if (!string.IsNullOrEmpty(_rootDirectory)) 
-			{
-				assetName = _rootDirectory+Path.DirectorySeparatorChar+assetName;
-			}
-			
-			// Get the real file name
-			if ((typeof(T) == typeof(Curve))) 
-			{				
-				assetName = CurveReader.Normalize(assetName);
-			}
-			else if ((typeof(T) == typeof(Texture2D))) 
-			{				
-				assetName = Texture2DReader.Normalize(assetName);
-			}			
-			if ((typeof(T) == typeof(SpriteFont))) 
-			{
-				assetName = SpriteFontReader.Normalize(assetName);
-			}
-			if ((typeof(T) == typeof(Song))) 
-			{
-				assetName = SongReader.Normalize(assetName);
-			}
-			if ((typeof(T) == typeof(SoundEffect))) 
-			{
-				assetName = SoundEffectReader.Normalize(assetName);
-			}
-			if ((typeof(T) == typeof(Video))) 
-			{
-				assetName = Video.Normalize(assetName);
-			}
-			if ((typeof(T) == typeof(Effect))) 
-			{
-				assetName = Effect.Normalize(assetName);
-			}
-			
-			if (string.IsNullOrEmpty(assetName))
-			{	
-				throw new ContentLoadException("Could not load "  + originalAssetName + " asset!");
-			}
-			
-			if(!Path.HasExtension(assetName))
-				assetName = string.Format("{0}.xnb", assetName);
-			
-			if(Path.GetExtension(assetName).ToUpper() == ".XNB")
-			{
+		
+			//if(Path.GetExtension(assetName).ToUpper() == ".XNB")
+			//{
 				// Load a XNB file
 				using( Stream stream = OpenStream( assetName ) )
 				using( BinaryReader xnbReader = new BinaryReader( stream ) )
@@ -319,16 +319,16 @@ namespace Microsoft.Xna.Framework.Content
 		                r.Initialize(typeManager);
 		            }
 		            // we need to read a byte here for things to work out, not sure why
-		            reader.ReadByte();
+		            int count = reader.ReadByte();
 					
 					// Get the 1-based index of the typereader we should use to start decoding with
 	          		int index = reader.ReadByte();
 					ContentTypeReader contentReader = reader.TypeReaders[index - 1];
 	           		result = reader.ReadObject<T>(contentReader);
 				}
-			}
-			else
-			{
+			//}
+			//else
+			/*{
 				if ((typeof(T) == typeof(Texture2D))) 
 					result = Texture2D.FromFile(graphicsDeviceService.GraphicsDevice,assetName);
 				if ((typeof(T) == typeof(SpriteFont)))
@@ -345,6 +345,7 @@ namespace Microsoft.Xna.Framework.Content
 				if ((typeof(T) == typeof(Effect)))
 					result = new Effect(graphicsDeviceService.GraphicsDevice, assetName);
 			}
+			*/
 						
 			if (result == null)
 			{	
