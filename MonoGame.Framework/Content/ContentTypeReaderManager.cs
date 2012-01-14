@@ -73,10 +73,10 @@ namespace Microsoft.Xna.Framework.Content
             }
 
             // I think these two bytes are some kind of version number. Either for the XNB file or the type readers
-            /*byte version =*/ reader.ReadByte();
+            byte version = reader.ReadByte();
             byte compressed = reader.ReadByte();
             // The next int32 is the length of the XNB file
-            /*int xnbLength = */reader.ReadInt32();
+            uint xnbLength = reader.ReadUInt32();
 
             if (compressed != 0)
             {
