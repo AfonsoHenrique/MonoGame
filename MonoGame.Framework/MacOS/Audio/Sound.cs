@@ -307,7 +307,7 @@ namespace Microsoft.Xna.Framework.Audio
 
 
                     //Console.WriteLine("streaming audio " + file);
-                    FileStream fs = new FileStream(file, System.IO.FileMode.Open);
+                    FileStream fs = new FileStream( file, System.IO.FileMode.Open, FileAccess.Read );
 
                     fs.BeginRead(mStreamBytes,
                         0,

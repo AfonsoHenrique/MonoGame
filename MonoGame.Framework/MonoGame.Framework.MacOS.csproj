@@ -389,4 +389,14 @@
       <Name>Lidgren.Network.MacOS</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\ThirdParty\FMOD\libfmodex.dylib">
+      <Link>libfmodex.dylib</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\ThirdParty\FMOD\libfmodexL.dylib">
+      <Link>libfmodexL.dylib</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 </Project>

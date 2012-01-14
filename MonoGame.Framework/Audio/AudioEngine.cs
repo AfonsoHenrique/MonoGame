@@ -190,7 +190,7 @@ namespace Microsoft.Xna.Framework.Audio
 
         public AudioEngine(string settingsFile)
         {
-            System.IO.BinaryReader reader = new System.IO.BinaryReader(new FileStream(settingsFile, System.IO.FileMode.Open));
+            System.IO.BinaryReader reader = new System.IO.BinaryReader(new FileStream(settingsFile, System.IO.FileMode.Open, System.IO.FileAccess.Read ));
 
             int version = reader.ReadInt32();
             // anything else would be uncivilized -- run oggAct to correct this error

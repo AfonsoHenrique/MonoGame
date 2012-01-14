@@ -43,7 +43,7 @@ namespace Microsoft.Xna.Framework.Audio
         {
             audioengine = audioEngine;
 
-            System.IO.BinaryReader reader = new System.IO.BinaryReader(new FileStream(filename, System.IO.FileMode.Open));
+            System.IO.BinaryReader reader = new System.IO.BinaryReader(new FileStream(filename, System.IO.FileMode.Open, FileAccess.Read ));
 
             int version = reader.ReadInt32();
             // anything else would be uncivilized -- run oggAct to correct this error

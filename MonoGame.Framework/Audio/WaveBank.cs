@@ -45,11 +45,7 @@ namespace Microsoft.Xna.Framework.Audio
 		internal AudioEngine mAudioEngine;
 	
 		public WaveBank(AudioEngine audioEngine, string nonStreamingWaveBankFilename)
-			: this( audioEngine, nonStreamingWaveBankFilename, 0, 8 )
-		{ }
-		
-        public WaveBank(AudioEngine audioEngine, string nonStreamingWaveBankFilename, int offset, short packetSize)
-        {
+		{
 #if !NO_FMOD
             int start = nonStreamingWaveBankFilename.LastIndexOf('/') + 1;
             BankName = nonStreamingWaveBankFilename.Substring(start, nonStreamingWaveBankFilename.Length - start - 4);
@@ -57,7 +53,7 @@ namespace Microsoft.Xna.Framework.Audio
             audioEngine.Wavebanks.Add(this);
 			mAudioEngine = audioEngine;
 
-            mFS = new FileStream(nonStreamingWaveBankFilename, FileMode.Open);
+            mFS = new FileStream( nonStreamingWaveBankFilename, FileMode.Open, FileAccess.Read );
 
             byte[] buf = new byte[8];
             mFS.BeginRead(buf, 0, buf.Length, delegate(IAsyncResult result)
@@ -105,6 +101,78 @@ namespace Microsoft.Xna.Framework.Audio
                     mSoundReadIdx = 0;
                     mSounds = new SoundData[count];
                     continueReadingSounds();
+                }, null);
+            }, null);
+#endif		
+		}
+		
+        public WaveBank(AudioEngine audioEngine, string streamingWaveBankFilename, int offset, short packetSize)
+        {
+#if !NO_FMOD
+            int start = streamingWaveBankFilename.LastIndexOf('/') + 1;
+            BankName = streamingWaveBankFilename.Substring(start, streamingWaveBankFilename.Length - start - 4);
+
+            audioEngine.Wavebanks.Add(this);
+			mAudioEngine = audioEngine;
+
+            mFS = new FileStream( streamingWaveBankFilename, FileMode.Open, FileAccess.Read );
+            byte[] buf = new byte[8];
+            mFS.BeginRead(buf, 0, buf.Length, delegate(IAsyncResult result)
+            {
+                int bytesRead;
+                try
+                {
+                    bytesRead = mFS.EndRead(result);
+                }
+                catch (System.IO.FileNotFoundException)
+                {
+                    mFS.Close();
+                    mFS = null;
+                    return;
+                }
+                Debug.Assert(bytesRead == 8, "Didn't read 8 bytes");
+                System.IO.BinaryReader reader = new System.IO.BinaryReader(
+                    new System.IO.MemoryStream(buf, false));
+                int version = reader.ReadInt32();
+                // anything else would be uncivilized -- run oggAct to correct this error
+                if (version != OWB_VERSION)
+                {
+                   	Console.WriteLine("rebuild your wave bank with oggact");
+                    mFS.Close();
+                    mFS = null;
+                    return;
+                }
+                Debug.Assert(version == OWB_VERSION, "rebuild your wave bank with oggact");
+                int count = reader.ReadInt32();
+
+                int sizeHeaderLength = 8 * count;
+                byte[] buf2 = new byte[sizeHeaderLength];
+                mFS.BeginRead(buf2, 0, buf2.Length, delegate(IAsyncResult result2)
+                {
+                    int bytesRead2 = mFS.EndRead(result2);
+                    Debug.Assert(bytesRead2 == buf2.Length,
+                        String.Format("{0} != {1}", buf2.Length, bytesRead2));
+                    System.IO.BinaryReader reader2 = new System.IO.BinaryReader(
+                        new System.IO.MemoryStream(buf2, false));
+                    mSizes = new long[count];
+                    for (int i = 0; i < count; i++)
+                    {
+                        mSizes[i] = reader2.ReadInt64();
+                    }
+
+                    mSoundReadIdx = 0;
+                    mSounds = new SoundData[count];
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        // hard coded constant in Sound.cs, change it if you change the max size
+                        Debug.Assert(mSizes[i] <= 5570141, "mSizes[i] <= 5570141");
+                        mSounds[i] = new SoundData(i, mSizes[i], false);
+                    }
+
+                    mIsLoaded = true;
+                    mFS.Close();
+                    mFS = null;
                 }, null);
             }, null);
 #endif
