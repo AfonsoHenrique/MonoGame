@@ -363,6 +363,7 @@
     <Compile Include="..\ThirdParty\FMOD\FMODexample.cs">
       <Link>Audio\FMOD\FMODexample.cs</Link>
     </Compile>
+    <Compile Include="Content\ContentReaders\EffectReader.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="MacOS\" />
