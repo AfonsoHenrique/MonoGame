@@ -71,6 +71,61 @@ namespace Microsoft.Xna.Framework.Graphics
 			Begin (sortMode, blendState, samplerState, depthStencilState, rasterizerState, effect, Matrix.Identity);			
 		}
 
+		internal Rectangle ConvertScissorRect( Rectangle scissorRectangle )
+		{
+			Rectangle rect = scissorRectangle;
+			int height = GraphicsDevice.PresentationParameters.BackBufferHeight;
+			int width = GraphicsDevice.PresentationParameters.BackBufferWidth;
+			
+			switch (GraphicsDevice.PresentationParameters.DisplayOrientation) 
+			{
+				case DisplayOrientation.Portrait :
+				{
+					rect.Y = height - rect.Y - rect.Height;
+					break;
+				}
+
+				case DisplayOrientation.LandscapeLeft :
+				{		
+					var x = rect.X;
+					rect.X = width - rect.Height - rect.Y;
+					rect.Y = height - rect.Width - x;
+				
+					// Swap Width and Height
+					var w = rect.Width;
+					rect.Width = rect.Height;
+					rect.Height = w;	
+					break;
+				}
+
+				case DisplayOrientation.LandscapeRight :
+				{			
+					var x = rect.X;
+					rect.X = rect.Y;
+					rect.Y = x;
+					var w = rect.Width;
+					rect.Width = rect.Height;
+					rect.Height = w;
+					break;
+				}
+				
+				case DisplayOrientation.PortraitUpsideDown :
+				{
+					rect.Y = rect.X;
+					rect.X = width - rect.X - rect.Width;
+					break;
+				}
+				
+				case DisplayOrientation.Default :
+				{
+					rect.Y = height - rect.Y - rect.Height;
+					break;
+				}
+			}	
+			
+			return rect;
+		}		
+		
 		public void End ()
 		{	
 
@@ -113,6 +168,8 @@ namespace Microsoft.Xna.Framework.Graphics
 //				GL.Enable (EnableCap.Blend);
 //			}
 			graphicsDevice.BlendState = _blendState;
+			graphicsDevice.RasterizerState = _rasterizerState;
+			
 			graphicsDevice.SetGraphicsStates();
 			// set camera
 			GL.MatrixMode (MatrixMode.Projection);
@@ -155,21 +212,21 @@ namespace Microsoft.Xna.Framework.Graphics
 
 			GL.MatrixMode (MatrixMode.Modelview);
 
-			GL.Viewport (0, 0, this.graphicsDevice.Viewport.Width, this.graphicsDevice.Viewport.Height);
+			GL.Viewport (this.graphicsDevice.Viewport.X, this.GraphicsDevice.Viewport.Y, this.graphicsDevice.Viewport.Width, this.graphicsDevice.Viewport.Height);
 
 			// Enable Scissor Tests if necessary
-			if (this.graphicsDevice.RasterizerState.ScissorTestEnable) {
-				GL.Scissor (this.graphicsDevice.ScissorRectangle.X, this.graphicsDevice.ScissorRectangle.Y, this.graphicsDevice.ScissorRectangle.Width, this.graphicsDevice.ScissorRectangle.Height);
+			if (this.graphicsDevice.RasterizerState.ScissorTestEnable) 
+			{
+				Rectangle scissorRect = ConvertScissorRect( GraphicsDevice.ScissorRectangle );
+				GL.Scissor( scissorRect.X, scissorRect.Y, scissorRect.Width, scissorRect.Height );
 			}
 
 			GL.LoadMatrix (ref _matrix.M11);
 
 			// Initialize OpenGL states (ideally move this to initialize somewhere else)
 			GLStateManager.SetDepthStencilState(_depthStencilState);
-
-			//GL.Disable (EnableCap.DepthTest);
 			
-			GL.TexEnv (TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, (int)All.BlendSrc);
+			GL.TexEnv (TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, (int)All.Modulate);
 			GL.Enable (EnableCap.Texture2D);
 			GL.EnableClientState (ArrayCap.VertexArray);
 			GL.EnableClientState (ArrayCap.ColorArray);
