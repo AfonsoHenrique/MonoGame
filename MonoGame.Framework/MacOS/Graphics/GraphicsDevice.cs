@@ -212,17 +212,20 @@ namespace Microsoft.Xna.Framework.Graphics
 
 		public void Reset ()
 		{
-			throw new NotImplementedException ();
+			if( DeviceReset != null )
+				DeviceReset(this, EventArgs.Empty );
 		}
 
 		public void Reset (Microsoft.Xna.Framework.Graphics.PresentationParameters presentationParameters)
 		{
-			throw new NotImplementedException ();
+			if( DeviceReset != null )
+				DeviceReset(this, EventArgs.Empty );
 		}
 
 		public void Reset (Microsoft.Xna.Framework.Graphics.PresentationParameters presentationParameters, GraphicsAdapter graphicsAdapter)
 		{
-			throw new NotImplementedException ();
+			if( DeviceReset != null )
+				DeviceReset(this, EventArgs.Empty );
 		}
 
 		public Microsoft.Xna.Framework.Graphics.DisplayMode DisplayMode {

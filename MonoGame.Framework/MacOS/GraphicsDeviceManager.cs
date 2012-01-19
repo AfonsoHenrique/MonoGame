@@ -123,6 +123,9 @@ namespace Microsoft.Xna.Framework
 			var h = DeviceReset;
 			if (h != null)
 				h (this, e);
+			
+			if( _graphicsDevice != null )
+				_graphicsDevice.Reset();
 		}
 
 		internal void OnDeviceCreated (EventArgs e)
@@ -192,20 +195,6 @@ namespace Microsoft.Xna.Framework
 			}
 			set {
 				wantFullScreen = value;
-				if (_graphicsDevice != null) {
-					
-					bool wasFullScreen = _graphicsDevice.PresentationParameters.IsFullScreen;
-
-					PresentationParameters presParams = _graphicsDevice.PresentationParameters;
-					presParams.IsFullScreen = value;
-					_graphicsDevice.PresentationParameters = presParams;
-
-					if (value && !wasFullScreen) {
-						_game.GoFullScreen();
-					} else if (!value && wasFullScreen) {
-						_game.GoWindowed();
-					}
-				}
 			}
 		}
 

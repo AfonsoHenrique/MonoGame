@@ -549,7 +549,6 @@ namespace Microsoft.Xna.Framework
 				frame.Width = content.Width;
 				frame.Height = content.Height + TitleBarHeight();
 			}
-			_mainWindow.SetFrame (frame, true);
 			
 			_gameWindow.Bounds = content;
 			_gameWindow.Size = content.Size.ToSize();
@@ -558,6 +557,8 @@ namespace Microsoft.Xna.Framework
 			PresentationParameters parms = GraphicsDevice.PresentationParameters;
 			parms.BackBufferHeight = (int)content.Size.Height;
 			parms.BackBufferWidth = (int)content.Size.Width;
+
+			_mainWindow.SetFrame (frame, true);
 		}
 
 		internal void GoWindowed ()
