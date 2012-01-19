@@ -307,7 +307,7 @@ namespace Microsoft.Xna.Framework.Graphics
 										value.M44);
 			_cachedValue = mat4;
 			float[] matArray = Matrix.ToFloatArray(value);
-			GL.UniformMatrix4 (internalIndex, matArray.Length, true, matArray);
+			GL.UniformMatrix4 (UniformLocation, matArray.Length, true, matArray);
 			//GL.UseProgram (0);
 		}
 

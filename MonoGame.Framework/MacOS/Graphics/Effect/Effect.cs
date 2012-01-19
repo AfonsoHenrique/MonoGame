@@ -51,6 +51,36 @@ namespace Microsoft.Xna.Framework.Graphics
 {
 	public class Effect : GraphicsResource
 	{
+		internal const string VARYING = @"
+			varying vec2 v_TexCoord;
+			varying vec4 v_Color;
+			";
+		
+		internal const string DEFAULT_VERTEX = VARYING + @"
+		    uniform mat4 u_projection;
+			uniform mat4 u_modelview;
+		
+		    //attribute vec2 a_Position;
+		    //attribute vec4 a_Color;
+		    //attribute vec2 a_TexCoord;
+		
+		    void main()
+		    {
+		        vec4 pos = gl_Vertex; //vec4(a_Position.x, a_Position.y, 1, 1);
+		        gl_Position =  u_projection * u_modelview * pos;
+		        v_TexCoord = gl_MultiTexCoord0.xy; //a_TexCoord;
+		        v_Color = gl_Color; //a_Color;
+		    }";
+		
+		internal const string DEFAULT_FRAGMENT = VARYING + @"
+			uniform sampler2D s_texture;
+			void main()
+			{
+			    vec4 color = texture2D( s_texture, v_TexCoord );
+			    color *= clamp(v_Color, 0.0, 1.0);
+			    gl_FragColor = color;
+			}";
+		
 		public EffectParameterCollection Parameters { get; set; }
 
 		public EffectTechniqueCollection Techniques { get; set; }
@@ -66,14 +96,13 @@ namespace Microsoft.Xna.Framework.Graphics
 		internal List<int> vertexShaders = new List<int>();
 		internal List<int> fragmentShaders = new List<int>();
 		
-		public Effect( GraphicsDevice graphicsDevice, byte[] effectCode, CompilerOptions options, EffectPool pool)
+		public Effect( GraphicsDevice graphicsDevice, byte[] effectCode, CompilerOptions options )
 			:this( graphicsDevice )
 		{
-			// TODO implement EffectPool 
-			
 			using( MemoryStream buffer = new MemoryStream( effectCode, false ) )
 			using( BinaryReader reader = new BinaryReader( buffer ) )
 			{
+				string fragmentSource = DEFAULT_FRAGMENT;
 				int fragmentblocklength = reader.ReadInt32();
 				if (fragmentblocklength != 0) 
 				{
@@ -82,10 +111,11 @@ namespace Microsoft.Xna.Framework.Graphics
 					int count = reader.Read( fragData, 0, fragmentblocklength );
 					System.Diagnostics.Debug.Assert( count == fragmentblocklength );
 					
-					string fragmentSource = Encoding.UTF8.GetString(fragData);
-					fragment_handle = CreateFragmentShaderFromSource( fragmentSource );
+					fragmentSource = Encoding.UTF8.GetString(fragData);
 				}
-				
+				fragment_handle = CreateFragmentShaderFromSource( fragmentSource );
+			
+				string vertexSource = DEFAULT_VERTEX;
 				int vertexblocklength = reader.ReadInt32();
 				if( vertexblocklength != 0 )
 				{
@@ -94,16 +124,17 @@ namespace Microsoft.Xna.Framework.Graphics
 					int count = reader.Read( vertexData, 0, vertexblocklength );
 					System.Diagnostics.Debug.Assert( count == vertexblocklength );
 					
-					string vertexSource = Encoding.UTF8.GetString(vertexData);
-					vertex_handle = CreateVertexShaderFromSource( vertexSource );
+					vertexSource = Encoding.UTF8.GetString(vertexData);
 				}
+				
+				vertex_handle = CreateVertexShaderFromSource( vertexSource );
 			}
 	
 			DefineTechnique ("Technique1", "Pass1", 0, 0);
 			CurrentTechnique = Techniques ["Technique1"];
 		}	
 		
-		protected Effect (GraphicsDevice graphicsDevice, Effect cloneSource)
+		protected Effect(GraphicsDevice graphicsDevice, Effect cloneSource)
 		{
 			if (graphicsDevice == null) {
 				throw new ArgumentNullException ("Graphics Device Cannot Be Null");
@@ -146,17 +177,8 @@ namespace Microsoft.Xna.Framework.Graphics
 		}
 
 		public Effect( GraphicsDevice graphicsDevice, byte[] effectCode)
-			: this( graphicsDevice, effectCode, CompilerOptions.None, null )
+			: this( graphicsDevice, effectCode, CompilerOptions.None )
 		{ }
-
-		public void Begin ()
-		{
-		}
-
-		public void Begin (SaveStateMode saveStateMode)
-		{
-
-		}
 
 		public virtual Effect Clone (GraphicsDevice device)
 		{
@@ -167,10 +189,6 @@ namespace Microsoft.Xna.Framework.Graphics
 		public virtual Effect Clone ()
 		{
 			return Clone (graphicsDevice);
-		}
-
-		public void End ()
-		{
 		}
 
 		internal static string Normalize (string FileName)
@@ -199,7 +217,9 @@ namespace Microsoft.Xna.Framework.Graphics
 
 		protected internal virtual void OnApply ()
 		{
-
+            Viewport viewport = GraphicsDevice.Viewport;
+            Matrix4 projection = Matrix4.CreateOrthographicOffCenter(0, viewport.Width, viewport.Height, 0, -1, 1);
+			GL.UniformMatrix4( Parameters["u_projection"].UniformLocation, false, ref projection );
 		}
 		
 		protected int CompileShaderFromSource( string source, ShaderType shaderType )
@@ -305,16 +325,15 @@ namespace Microsoft.Xna.Framework.Graphics
 
 				uniformLocation = GL.GetUniformLocation (obj, uniformName);
 
-				Console.WriteLine ("{0}: {1} {2} {3} {4}", x, name, type, length, size);
+				Console.WriteLine ("{0}: {1} {2} {3} {4}", uniformLocation, uniformName, type, length, size);
 
-				EffectParameter efp = new EffectParameter (this, uniformName, x, userIndex, uniformLocation,
+				EffectParameter efp = new EffectParameter (this, uniformName, uniformLocation, userIndex, uniformLocation,
 				                                          type.ToString (), length, size);
 				Parameters._parameters.Add (efp.Name, efp);
 				if (efp.ParameterType == EffectParameterType.Texture2D) {
 					_textureMappings.Add(efp);
 				}
 			}
-
 		}		
 	}
 }

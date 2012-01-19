@@ -49,8 +49,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			_depthStencilState = depthStencilState ?? DepthStencilState.None;
 			_rasterizerState = rasterizerState ?? RasterizerState.CullCounterClockwise;
 
-			//if (effect != null)
-				_effect = effect;
+			_effect = effect == null ? spriteEffect : effect;
 
 			_matrix = transformMatrix;
 		}
@@ -149,98 +148,54 @@ namespace Microsoft.Xna.Framework.Graphics
 				}
 			}
 
-			// Disable Blending by default = BlendState.Opaque
-			//GL.Disable (EnableCap.Blend);
-
-			// set the blend mode
-//			if (_blendState == BlendState.NonPremultiplied) {
-//				GL.BlendFunc (BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-//				GL.Enable (EnableCap.Blend);
-//			}
-//
-//			if (_blendState == BlendState.AlphaBlend) {
-//				GL.BlendFunc (BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha);
-//				GL.Enable (EnableCap.Blend);
-//			}
-//
-//			if (_blendState == BlendState.Additive) {
-//				GL.BlendFunc (BlendingFactorSrc.SrcAlpha, BlendingFactorDest.One);
-//				GL.Enable (EnableCap.Blend);
-//			}
 			graphicsDevice.BlendState = _blendState;
 			graphicsDevice.RasterizerState = _rasterizerState;
+			graphicsDevice.DepthStencilState = _depthStencilState;
 			
 			graphicsDevice.SetGraphicsStates();
-			// set camera
-			GL.MatrixMode (MatrixMode.Projection);
-			GL.LoadIdentity ();		
 
 			// Switch on the flags.
 			switch (this.graphicsDevice.PresentationParameters.DisplayOrientation) {
 			case DisplayOrientation.LandscapeLeft:
 				{
 					GL.Rotate (-90, 0, 0, 1); 
-					GL.Ortho (0, this.graphicsDevice.Viewport.Height, this.graphicsDevice.Viewport.Width, 0, -1, 1);
 					break;
 				}
 
 			case DisplayOrientation.LandscapeRight:
 				{
 					GL.Rotate (90, 0, 0, 1); 
-					GL.Ortho (0, this.graphicsDevice.Viewport.Height, this.graphicsDevice.Viewport.Width, 0, -1, 1);
 					break;
 				}
 
 			case DisplayOrientation.PortraitUpsideDown:
 				{
 					GL.Rotate (180, 0, 0, 1); 
-					GL.Ortho (0, this.graphicsDevice.Viewport.Width, this.graphicsDevice.Viewport.Height, 0, -1, 1);
-					break;
-				}
-
-			default:
-				{
-					GL.Ortho (0, this.graphicsDevice.Viewport.Width, this.graphicsDevice.Viewport.Height, 0, -1, 1);
 					break;
 				}
 			}
-
-			// Enable Scissor Tests if necessary
-			if (this.graphicsDevice.RasterizerState.ScissorTestEnable) {
-				GL.Enable (EnableCap.ScissorTest);				
-			}
-
-			GL.MatrixMode (MatrixMode.Modelview);
 
 			GL.Viewport (this.graphicsDevice.Viewport.X, this.GraphicsDevice.Viewport.Y, this.graphicsDevice.Viewport.Width, this.graphicsDevice.Viewport.Height);
 
 			// Enable Scissor Tests if necessary
 			if (this.graphicsDevice.RasterizerState.ScissorTestEnable) 
 			{
+				GL.Enable (EnableCap.ScissorTest);				
 				Rectangle scissorRect = ConvertScissorRect( GraphicsDevice.ScissorRectangle );
 				GL.Scissor( scissorRect.X, scissorRect.Y, scissorRect.Width, scissorRect.Height );
 			}
 
-			GL.LoadMatrix (ref _matrix.M11);
-
-			// Initialize OpenGL states (ideally move this to initialize somewhere else)
-			GLStateManager.SetDepthStencilState(_depthStencilState);
-			
-			GL.TexEnv (TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, (int)All.Modulate);
-			GL.Enable (EnableCap.Texture2D);
 			GL.EnableClientState (ArrayCap.VertexArray);
 			GL.EnableClientState (ArrayCap.ColorArray);
 			GL.EnableClientState (ArrayCap.TextureCoordArray);
 
-			// Enable Culling for better performance
-			GL.Enable (EnableCap.CullFace);
-			GL.FrontFace (FrontFaceDirection.Cw);
-			GL.Color4 (1.0f, 1.0f, 1.0f, 1.0f);
-
-			_batcher.DrawBatch (_sortMode, _samplerState);
+			GL.UniformMatrix4( _effect.Parameters["u_modelview"].UniformLocation, 1, false, ref _matrix.M11 );
+			
+			_batcher.DrawBatch (_sortMode, _samplerState, _effect);
 	
 			// Disable Scissor Tests if necessary
-			if (this.graphicsDevice.RasterizerState.ScissorTestEnable) {
+			if (this.graphicsDevice.RasterizerState.ScissorTestEnable) 
+			{
 				GL.Disable (EnableCap.ScissorTest);
 			}
 
@@ -248,14 +203,8 @@ namespace Microsoft.Xna.Framework.Graphics
 			graphicsDevice.Textures._textures.Clear ();
 			
 			// unbinds shader
-			if (_effect != null) {
-				GL.UseProgram (0);
-				_effect = null;
-			}
-			
-			spriteEffect.CurrentTechnique.Passes [0].Apply ();
-
-
+			GL.UseProgram (0);
+			_effect = null;
 		}
 
 		public void Draw (Texture2D texture,

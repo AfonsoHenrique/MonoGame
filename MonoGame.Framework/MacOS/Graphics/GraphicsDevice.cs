@@ -451,9 +451,11 @@ namespace Microsoft.Xna.Framework.Graphics
 		internal void SetGraphicsStates ()
 		{
 			GL.PushMatrix();
+			
 			// Set up our Rasterizer States
 			GLStateManager.SetRasterizerStates(RasterizerState);
 			GLStateManager.SetBlendStates(BlendState);
+			GLStateManager.SetDepthStencilState(DepthStencilState);
 		}
 
 		bool resetVertexStates = false;
