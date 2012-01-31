@@ -66,7 +66,12 @@ namespace Microsoft.Xna.Framework
 		private DateTime _lastUpdate;
 		private DateTime _now;
 		private NSTrackingArea _trackingArea;
-
+		private TimeSpan _targetRate;
+		private TimeSpan _residual;
+		private bool _shouldRender;
+		
+		private const int MAX_FRAMES = 5;
+		
 		#region UIVIew Methods		
 		public GameWindow (RectangleF frame) : base (frame)
 		{
@@ -91,6 +96,8 @@ namespace Microsoft.Xna.Framework
 
 			// Initialize _lastUpdate
 			_lastUpdate = DateTime.Now;
+
+			_residual = TimeSpan.Zero;
 		}
 
 		public GameWindow (RectangleF frame,NSOpenGLContext context) : base(frame)
@@ -118,6 +125,8 @@ namespace Microsoft.Xna.Framework
 
 			// Initialize _lastUpdate
 			_lastUpdate = DateTime.Now;
+
+			_residual = TimeSpan.Zero;
 		}
 
 		~GameWindow ()
@@ -132,6 +141,7 @@ namespace Microsoft.Xna.Framework
 		public new void Run (double updateRate)
 		{
 			_lastUpdate = DateTime.Now;
+			_targetRate = TimeSpan.FromSeconds( 1 / updateRate );
 			base.Run(updateRate);
 		}
 
@@ -161,7 +171,10 @@ namespace Microsoft.Xna.Framework
 			if (game != null) {
 				_drawGameTime.Update (_now - _lastUpdate);
 				_lastUpdate = _now;
-				game.DoDraw (_drawGameTime);
+				
+				if ( _shouldRender )
+					game.DoDraw( _updateGameTime );
+					//game.DoDraw (_drawGameTime);
 			}
 
 		}
@@ -213,11 +226,32 @@ namespace Microsoft.Xna.Framework
 		{			
 			base.OnUpdateFrame (e);	
 
-			if (game != null) {
-				_now = DateTime.Now;
-				_updateGameTime.Update (_now - _lastUpdate);
-				game.DoUpdate (_updateGameTime);
+			if ( game == null )
+				return;
+		
+			int numUpdates = 0;
+			_now = DateTime.Now;
+			var time = _now - _lastUpdate + _residual;
+		
+			if ( time < TimeSpan.Zero )
+				return;
+			
+			//_updateGameTime.Update (_now - _lastUpdate);
+			
+			while( time - _targetRate >= TimeSpan.Zero && numUpdates < MAX_FRAMES )
+			{
+				_updateGameTime.Update( _targetRate );
+				game.DoUpdate( _updateGameTime );
+				time -= _targetRate;
+				numUpdates++;
 			}
+			
+			TimeSpan maxResidual = TimeSpan.FromSeconds( (MAX_FRAMES-1) * _targetRate.TotalSeconds );
+			_residual = MathHelper.Clamp( time, TimeSpan.Zero, maxResidual );
+			
+			_shouldRender = (numUpdates >= 1);
+			
+			//game.DoUpdate (_updateGameTime);
 		}
 
 		protected override void OnVisibleChanged (EventArgs e)

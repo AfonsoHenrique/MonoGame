@@ -110,7 +110,24 @@ namespace Microsoft.Xna.Framework
         {
             return Math.Min(value1, value2);
         }
+		
+		public static TimeSpan Min( TimeSpan value1, TimeSpan value2 )
+		{
+			return value1 <= value2 ? value1 : value2;
+		}
+		
+		public static TimeSpan Max( TimeSpan value1, TimeSpan value2 )
+		{
+			return value1 >= value2 ? value1 : value2;
+		}
         
+		public static TimeSpan Clamp( TimeSpan value, TimeSpan min, TimeSpan max )
+		{
+			value = value < min ? min : value;
+			value = value > max ? max : value;
+			return value;
+		}
+		
         public static float SmoothStep(float value1, float value2, float amount)
         {
             // It is expected that 0 < amount < 1
