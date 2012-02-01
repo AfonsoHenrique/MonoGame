@@ -249,11 +249,8 @@ namespace Microsoft.Xna.Framework
 		}
 
 		public bool SynchronizeWithVerticalRetrace {
-			get {
-				throw new NotImplementedException ();
-			}
-			set {
-			}
+			get;
+			set;
 		}
 
 		public DisplayOrientation SupportedOrientations { 

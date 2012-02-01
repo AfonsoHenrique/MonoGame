@@ -98,6 +98,7 @@ namespace Microsoft.Xna.Framework
 			_lastUpdate = DateTime.Now;
 
 			_residual = TimeSpan.Zero;
+			_targetRate = TimeSpan.Zero;
 		}
 
 		public GameWindow (RectangleF frame,NSOpenGLContext context) : base(frame)
@@ -127,6 +128,7 @@ namespace Microsoft.Xna.Framework
 			_lastUpdate = DateTime.Now;
 
 			_residual = TimeSpan.Zero;
+			_targetRate = TimeSpan.Zero;
 		}
 
 		~GameWindow ()
@@ -221,7 +223,24 @@ namespace Microsoft.Xna.Framework
 		{
 			base.OnUnload (e);
 		}
-
+		
+		internal int DoUpdate( TimeSpan time, TimeSpan dt, int maxUpdates )
+		{
+			int numUpdates = 0;
+			while ( time - dt >= TimeSpan.Zero && numUpdates < maxUpdates )
+			{
+				_updateGameTime.Update( dt );
+				game.DoUpdate( _updateGameTime );
+				time -= dt;
+				numUpdates++;
+			}
+						
+			TimeSpan maxResidual = TimeSpan.FromSeconds( (MAX_FRAMES-1) * dt.TotalSeconds );
+			_residual = MathHelper.Clamp( time, TimeSpan.Zero, maxResidual );
+			
+			return numUpdates;
+		}
+		
 		protected override void OnUpdateFrame (FrameEventArgs e)
 		{			
 			base.OnUpdateFrame (e);	
@@ -229,29 +248,19 @@ namespace Microsoft.Xna.Framework
 			if ( game == null )
 				return;
 		
-			int numUpdates = 0;
 			_now = DateTime.Now;
 			var time = _now - _lastUpdate + _residual;
 		
 			if ( time < TimeSpan.Zero )
 				return;
-			
-			//_updateGameTime.Update (_now - _lastUpdate);
-			
-			while( time - _targetRate >= TimeSpan.Zero && numUpdates < MAX_FRAMES )
-			{
-				_updateGameTime.Update( _targetRate );
-				game.DoUpdate( _updateGameTime );
-				time -= _targetRate;
-				numUpdates++;
-			}
-			
-			TimeSpan maxResidual = TimeSpan.FromSeconds( (MAX_FRAMES-1) * _targetRate.TotalSeconds );
-			_residual = MathHelper.Clamp( time, TimeSpan.Zero, maxResidual );
+		
+			int numUpdates = 0;
+			if ( _targetRate == TimeSpan.Zero )
+				numUpdates = DoUpdate( time, time, MAX_FRAMES );
+			else
+				numUpdates = DoUpdate( time, _targetRate, MAX_FRAMES );
 			
 			_shouldRender = (numUpdates >= 1);
-			
-			//game.DoUpdate (_updateGameTime);
 		}
 
 		protected override void OnVisibleChanged (EventArgs e)

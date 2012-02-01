@@ -324,6 +324,8 @@ namespace Microsoft.Xna.Framework
 				_wasResizeable = IsAllowUserResizing;
 				GoWindowed();
 			}
+			
+			Window.OpenGLContext.SwapInterval= manager.SynchronizeWithVerticalRetrace;
 		}
 
 		// This method calls the game Initialize and BeginRun methods before it begins the game loop and starts 
@@ -369,7 +371,14 @@ namespace Microsoft.Xna.Framework
 			
 			Initialize ();
 
-			_gameWindow.Run (FramesPerSecond / (FramesPerSecond * TargetElapsedTime.TotalSeconds));
+			//_gameWindow.Run (FramesPerSecond / (FramesPerSecond * TargetElapsedTime.TotalSeconds));
+			if ( IsFixedTimeStep )
+				_gameWindow.Run( 1 / TargetElapsedTime.TotalSeconds );
+			else
+				_gameWindow.Run();
+			
+			applyChanges( manager );
+			
 			_mainWindow.MakeKeyAndOrderFront (_mainWindow);
 		}
 
@@ -579,7 +588,6 @@ namespace Microsoft.Xna.Framework
 			
 			NSMenu.MenuBarVisible = true;
 			_mainWindow.StyleMask = NSWindowStyle.Titled | NSWindowStyle.Closable;
-			if (_wasResizeable) _mainWindow.StyleMask |= NSWindowStyle.Resizable;
 
 			if (oldTitle != null)
 				_gameWindow.Title = oldTitle;
