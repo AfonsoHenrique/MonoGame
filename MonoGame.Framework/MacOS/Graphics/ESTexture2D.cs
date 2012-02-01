@@ -320,10 +320,13 @@ namespace Microsoft.Xna.Framework.Graphics
 			GL.BindTexture (TextureTarget.Texture2D, _name);
 			GL.TexParameter (TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)filter);
 			GL.TexParameter (TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)filter);
+			GL.TexParameter( TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)All.ClampToEdge );
+			GL.TexParameter( TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)All.ClampToEdge );	
 
 			switch (pixelFormat) {				
-			case SurfaceFormat.Color /*kTexture2DPixelFormat_RGBA8888*/:
-				GL.TexImage2D (TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, (int)width, (int)height, 0, MonoMac.OpenGL.PixelFormat.Rgba, PixelType.UnsignedByte, data);
+			case SurfaceFormat.Color:
+				// XNA 3.1 uses Bgra byte ordering 
+				GL.TexImage2D (TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, (int)width, (int)height, 0, MonoMac.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data);
 				break;
 			case SurfaceFormat.Dxt1:
 				GL.CompressedTexImage2D( TextureTarget.Texture2D, 0, PixelInternalFormat.CompressedRgbaS3tcDxt1Ext, (int)width, (int)height, 0, dataLength, data );
