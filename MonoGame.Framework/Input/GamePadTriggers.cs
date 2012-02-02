@@ -45,26 +45,26 @@ namespace Microsoft.Xna.Framework.Input
 {
 	public struct GamePadTriggers
 	{
-		public GamePadTriggers (
-         float leftTrigger,
-         float rightTrigger)
+		public GamePadTriggers( float leftTrigger, float rightTrigger )
+			: this()
 		{
+			leftTrigger = MathHelper.Clamp( leftTrigger, -1, 1 );
+			rightTrigger = MathHelper.Clamp( rightTrigger, -1, 1 );
+			
+			Left = ( leftTrigger + 1 ) / 2f;
+			Right = ( rightTrigger + 1 ) / 2f;
 		}
 		
 		public float Left 
 		{ 
-			get
-			{
-				return 0.0f;
-			}
+			get;
+			internal set;
 		}
 		
 		public float Right 
 		{ 
-			get
-			{
-				return 0.0f;
-			}
+			get;
+			internal set;
 		}
 	}
 }

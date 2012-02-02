@@ -27,6 +27,88 @@ namespace Microsoft.Xna.Framework.Input
             }
         }
 
+		static PadConfig Controller;
+	
+		static void InitButton( GamepadConfigLib.Input button, byte id )
+		{
+			button.ID = id;
+			button.Type = InputType.Button;
+		}
+
+		static void InitAxis( Axis axis, byte id )
+		{
+			axis.Negative.ID = id;
+			axis.Negative.Type = InputType.Axis;
+			axis.Negative.Negative = true;
+			
+			axis.Positive.ID = id;
+			axis.Positive.Type = InputType.Axis;
+			axis.Positive.Negative = false;
+		}
+		
+		static void InitStick( Stick stick, byte press, byte x, byte y )
+		{
+			InitButton( stick.Press, press  );
+			InitAxis( stick.X, x );
+			InitAxis( stick.Y, y );
+		}
+			
+		
+		static GamePad()
+		{
+			const int BUTTON_A = 11;
+			const int BUTTON_B = 12;
+			const int BUTTON_X = 13;
+			const int BUTTON_Y = 14;
+			
+			const int BUTTON_DUP = 0;
+			const int BUTTON_DDOWN = 1;
+			const int BUTTON_DLEFT = 2;
+			const int BUTTON_DRIGHT = 3;
+			
+			const int BUTTON_START = 4;
+			const int BUTTON_BACK = 5;
+			
+			const int BUTTON_LSTICK = 6;
+			const int BUTTON_RSTICK = 7;
+			
+			const int BUTTON_LBUMPER = 8;
+			const int BUTTON_RBUMPER = 9;
+			
+			const int AXIS_LSTICK_X = 0;
+			const int AXIS_LSTICK_Y = 1;			
+			const int AXIS_RSTICK_X = 2;
+			const int AXIS_RSTICK_Y = 3;
+		
+			const int AXIS_LEFTTRIG = 4;
+			const int AXIS_RIGHTTRIG = 5;
+			
+			Controller = new PadConfig("Controller", 0);
+			
+			InitButton( Controller.Button_B, BUTTON_B );
+			InitButton( Controller.Button_X, BUTTON_X );
+			InitButton( Controller.Button_A, BUTTON_A );
+			InitButton( Controller.Button_Y, BUTTON_Y );
+			InitButton( Controller.Button_Back, BUTTON_BACK );
+			InitButton( Controller.Button_Start, BUTTON_START );
+			InitButton( Controller.Button_LB, BUTTON_LBUMPER );
+			InitButton( Controller.Button_RB, BUTTON_RBUMPER );
+			
+			InitButton( Controller.Dpad.Up, BUTTON_DUP );
+			InitButton( Controller.Dpad.Down, BUTTON_DDOWN );
+			InitButton( Controller.Dpad.Left, BUTTON_DLEFT );
+			InitButton( Controller.Dpad.Right, BUTTON_DRIGHT );
+		
+			InitStick( Controller.RightStick, BUTTON_RSTICK, AXIS_RSTICK_X, AXIS_RSTICK_Y );
+			InitStick( Controller.LeftStick, BUTTON_LSTICK, AXIS_LSTICK_X, AXIS_LSTICK_Y );
+			
+			Controller.RightTrigger.ID = AXIS_RIGHTTRIG;
+			Controller.RightTrigger.Type = InputType.Axis;
+			
+			Controller.LeftTrigger.ID = AXIS_LEFTTRIG;
+			Controller.LeftTrigger.Type = InputType.Axis;
+		}
+		
 		static void AutoConfig () {
 						Init();
 				if (!sdl)
@@ -34,7 +116,16 @@ namespace Microsoft.Xna.Framework.Input
 				Console.WriteLine("Number of joysticks: " + Sdl.SDL_NumJoysticks());
 					int numSticks = Sdl.SDL_NumJoysticks();
 					for (int x = 0; x < numSticks; x++) {
-
+					
+						string name = Sdl.SDL_JoystickName(x);
+				
+						if ( name == "Controller" )
+						{
+							settings[x] = Controller;
+							devices[x] = Sdl.SDL_JoystickOpen( Controller.ID );
+							continue;
+						}
+					
 						PadConfig pc = new PadConfig(Sdl.SDL_JoystickName(x), 0);
 						devices[x] = Sdl.SDL_JoystickOpen (pc.ID);
 
@@ -211,21 +302,32 @@ namespace Microsoft.Xna.Framework.Input
             return Settings[(int)index];
         }
 
-        static Buttons StickToButtons(Vector2 stick, float DeadZoneSize)
+        static Buttons StickToButtons(Vector2 stick, Buttons left, Buttons right, Buttons up, Buttons down, float DeadZoneSize)
         {
             Buttons b = (Buttons)0;
 
             if (stick.X > DeadZoneSize)
-                b |= Buttons.LeftThumbstickRight;
+                b |= right;
             if (stick.X < -DeadZoneSize)
-                b |= Buttons.LeftThumbstickLeft;
+                b |= left;
             if (stick.Y > DeadZoneSize)
-                b |= Buttons.LeftThumbstickUp;
+                b |= up;
             if (stick.Y < -DeadZoneSize)
-                b |= Buttons.LeftThumbstickDown;
+                b |= down;
 
             return b;
         }
+		
+		static Buttons TriggerToButtons( float trigger, Buttons button, float DeadZoneSize )
+		{
+			Buttons b = (Buttons)0;
+			
+			if ( trigger > DeadZoneSize )
+				b |= button;
+			
+			return b;
+		}
+		
         static Buttons ReadButtons(IntPtr device, PadConfig c, float deadZoneSize)
         {
             short DeadZone = (short)(deadZoneSize * short.MaxValue);
@@ -266,15 +368,6 @@ namespace Microsoft.Xna.Framework.Input
 
             return b;
         }
-        static Buttons ReadButtons(IntPtr device, PadConfig c, float deadZoneSize, Vector2 leftStick, Vector2 rightStick)
-        {
-            Buttons b = ReadButtons(device, c, deadZoneSize);
-
-            b |= StickToButtons(leftStick, deadZoneSize);
-            b |= StickToButtons(rightStick, deadZoneSize);
-
-            return b;
-        }
 
         static GamePadState ReadState(PlayerIndex index, GamePadDeadZone deadZone)
         {
@@ -287,8 +380,15 @@ namespace Microsoft.Xna.Framework.Input
             GamePadThumbSticks sticks = new GamePadThumbSticks(new Vector2(c.LeftStick.ReadAxisPair(device)), new Vector2(c.RightStick.ReadAxisPair(device)));
             sticks.ApplyDeadZone(deadZone, DeadZoneSize);
             GamePadTriggers triggers = new GamePadTriggers(c.LeftTrigger.ReadFloat(device), c.RightTrigger.ReadFloat(device));
-            GamePadButtons buttons = new GamePadButtons(ReadButtons(device, c, DeadZoneSize));
-            GamePadDPad dpad = new GamePadDPad(buttons.buttons);
+			
+			Buttons buttonState = ReadButtons( device, c, DeadZoneSize );
+			buttonState |= StickToButtons( sticks.Left, Buttons.LeftThumbstickLeft, Buttons.LeftThumbstickRight, Buttons.LeftThumbstickUp, Buttons.LeftThumbstickDown, DeadZoneSize );
+			buttonState |= StickToButtons( sticks.Right, Buttons.RightThumbstickLeft, Buttons.RightThumbstickRight, Buttons.RightThumbstickUp, Buttons.RightThumbstickDown, DeadZoneSize );
+			buttonState |= TriggerToButtons( triggers.Left, Buttons.LeftTrigger, DeadZoneSize );
+			buttonState |= TriggerToButtons( triggers.Right, Buttons.RightTrigger, DeadZoneSize );
+			
+			GamePadButtons buttons = new GamePadButtons( buttonState );
+            GamePadDPad dpad = new GamePadDPad( buttonState );
 
             GamePadState g = new GamePadState(sticks, triggers, buttons, dpad);
             return g;
