@@ -107,11 +107,12 @@ namespace Microsoft.Xna.Framework
 
 			// Perform any other window configuration you desire
 			_mainWindow.IsOpaque = true;
+			_mainWindow.BackgroundColor = NSColor.Black;
 			_mainWindow.EnableCursorRects();
 			_gameWindow = new GameWindow (frame);
 			_gameWindow.game = this;
-
-			_mainWindow.ContentView.AddSubview (_gameWindow);
+			
+			_mainWindow.ContentView = _gameWindow;
 			_mainWindow.AcceptsMouseMovedEvents = false;
 			_mainWindow.Center();
 			// Initialize GameTime
@@ -538,36 +539,41 @@ namespace Microsoft.Xna.Framework
 		private void ResetWindowBounds ()
 		{
 			RectangleF frame;
-			RectangleF content;
+		
+			PresentationParameters parms = GraphicsDevice.PresentationParameters;
+			parms.BackBufferWidth = graphicsDeviceManager.PreferredBackBufferWidth; 
+			parms.BackBufferHeight = graphicsDeviceManager.PreferredBackBufferHeight; 
 			
-			if (graphicsDeviceManager.IsFullScreen) {
+			if (graphicsDeviceManager.IsFullScreen) 
+			{
 				frame = NSScreen.MainScreen.Frame;
-				content = NSScreen.MainScreen.Frame;
-			} else {
-				content = _gameWindow.Bounds;
-				content.Width = Math.Min(
-				                    graphicsDeviceManager.PreferredBackBufferWidth,
-				                    NSScreen.MainScreen.VisibleFrame.Width);
-				content.Height = Math.Min(
-				                    graphicsDeviceManager.PreferredBackBufferHeight,
-				                    NSScreen.MainScreen.VisibleFrame.Height-TitleBarHeight());
+			
+				RectangleF content = _gameWindow.Bounds;
+				content.Width = parms.BackBufferWidth;
+				content.Height = parms.BackBufferHeight; 
+
+				_gameWindow.Bounds = content;
+				_gameWindow.Size = content.Size.ToSize();
+			
+				int[] dims = new int[] {
+					parms.BackBufferWidth,
+					parms.BackBufferHeight
+				};
 				
+				_gameWindow.OpenGLContext.CGLContext.CGLSetParameter( CGLContextParameter.kCGLCPSurfaceBackingSize, dims );
+				_gameWindow.OpenGLContext.CGLContext.CGLEnable( CGLContextEnable.kCGLCESurfaceBackingSize );
+			} 
+			else 
+			{
 				frame = _mainWindow.Frame;
-				frame.X = Math.Max(frame.X, NSScreen.MainScreen.VisibleFrame.X);
-				frame.Y = Math.Max(frame.Y, NSScreen.MainScreen.VisibleFrame.Y);
-				frame.Width = content.Width;
-				frame.Height = content.Height + TitleBarHeight();
+				frame.Width = parms.BackBufferWidth;
+				frame.Height = parms.BackBufferHeight + TitleBarHeight();
+				
+				_gameWindow.OpenGLContext.CGLContext.CGLDisable( CGLContextEnable.kCGLCESurfaceBackingSize );
 			}
 			
-			_gameWindow.Bounds = content;
-			_gameWindow.Size = content.Size.ToSize();
-
-			// Now we set our Presentaion Parameters
-			PresentationParameters parms = GraphicsDevice.PresentationParameters;
-			parms.BackBufferHeight = (int)content.Size.Height;
-			parms.BackBufferWidth = (int)content.Size.Width;
-
 			_mainWindow.SetFrame (frame, true);
+			_mainWindow.Center();
 		}
 
 		internal void GoWindowed ()
@@ -581,7 +587,7 @@ namespace Microsoft.Xna.Framework
 
 			// I will leave this here just in case someone can figure out how to do
 			//  a full screen with this and still get Alt + Tab to friggin work.
-//			_mainWindow.ContentView.ExitFullscreenModeWithOptions(new NSDictionary());
+			//_mainWindow.ContentView.ExitFullscreenModeWithOptions(new NSDictionary());
 
 			//Changing window style resets the title. Save it.
 			string oldTitle = _gameWindow.Title;

@@ -364,6 +364,7 @@
       <Link>Audio\FMOD\FMODexample.cs</Link>
     </Compile>
     <Compile Include="Content\ContentReaders\EffectReader.cs" />
+    <Compile Include="MacOS\MonoMacExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="MacOS\" />
