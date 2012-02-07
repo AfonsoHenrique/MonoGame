@@ -90,10 +90,10 @@ namespace Microsoft.Xna.Framework.Graphics
 			};
 			
 			AlphaBlend = new BlendState () {
-				ColorSourceBlend = Blend.One,
-				AlphaSourceBlend = Blend.One,
-				ColorDestinationBlend = Blend.InverseSourceAlpha,
-				AlphaDestinationBlend = Blend.InverseSourceAlpha
+				ColorSourceBlend = Blend.SourceAlpha,//Blend.One,
+				AlphaSourceBlend = Blend.SourceAlpha, //Blend.One,
+				ColorDestinationBlend = Blend.InverseSourceAlpha, //Blend.InverseSourceAlpha,
+				AlphaDestinationBlend = Blend.InverseSourceAlpha //Blend.InverseSourceAlpha
 			};
 			
 			NonPremultiplied = new BlendState () {
