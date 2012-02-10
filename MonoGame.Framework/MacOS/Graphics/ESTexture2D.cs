@@ -211,7 +211,8 @@ namespace Microsoft.Xna.Framework.Graphics
 
 		public void Dispose ()
 		{
-			if (_name != 0) {
+			if (_name != 0) 
+			{
 				GL.DeleteTextures (1, ref _name);
 			}
 		}

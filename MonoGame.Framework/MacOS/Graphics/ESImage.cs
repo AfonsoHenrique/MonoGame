@@ -47,7 +47,7 @@ using MonoMac.OpenGL;
 
 namespace Microsoft.Xna.Framework.Graphics
 {
-	internal class ESImage
+	internal class ESImage : IDisposable
 	{
 		// The OpenGL texture to be used for this image
 		internal ESTexture2D	texture;	
@@ -124,6 +124,11 @@ namespace Microsoft.Xna.Framework.Graphics
 			Initialize(imageScale);
 		}
 		
+		public void Dispose()
+		{
+			if ( texture != null )
+				texture.Dispose();
+		}
 				
 		public int TextureOffsetX 
 		{

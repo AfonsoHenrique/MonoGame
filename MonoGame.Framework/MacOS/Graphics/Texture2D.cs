@@ -159,6 +159,14 @@ namespace Microsoft.Xna.Framework.Graphics
 //			_textureId = (int)texture.Name;
 		}
 
+		protected override void DoDisposing( EventArgs e )
+		{
+			base.DoDisposing( e );
+			if ( texture != null )
+				texture.Dispose();
+			texture = null;
+		}
+		
 		public Color GetPixel (int x, int y)
 		{
 			var result = new Color (0, 0, 0, 0);
