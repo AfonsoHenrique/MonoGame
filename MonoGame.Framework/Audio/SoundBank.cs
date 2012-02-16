@@ -68,7 +68,7 @@ namespace Microsoft.Xna.Framework.Audio
 
         public Cue GetCue(string name)
         {
-            for (int i = 0; i < cues.Length - 1; i++)
+            for (int i = 0; i < cues.Length; i++)
             {
                 if (cues[i].Name == name)
                 {
