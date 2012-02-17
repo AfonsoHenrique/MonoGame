@@ -397,8 +397,9 @@ namespace Microsoft.Xna.Framework.Audio
                         player.mData.instances.Add(_sound);
                 }
                 else
-                    //GSGE.Debug.logMessage("missing sound, probably streaming");
-                    throw new NotImplementedException();
+				{
+					// missing a sound, do nothing
+				}
             }
         }
 
