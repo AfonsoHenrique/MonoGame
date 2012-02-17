@@ -512,17 +512,17 @@ namespace Microsoft.Xna.Framework.Audio
 #endif
             }
         }
-#if NACL
+//#if NACL
         private int _reverb2 = 0;
         private float _lowPassCutoff2 = 22050;
         private static FMOD.REVERB_CHANNELPROPERTIES rcp = new FMOD.REVERB_CHANNELPROPERTIES();
-#endif
+//#endif
         public int Reverb
         {
             set
             {
                 // performance is terrible on PC!
-#if NACL
+//#if NACL
 #if !NO_FMOD
                 Debug.Assert(value >= -10000);
                 Debug.Assert(value <= 1000);
@@ -548,7 +548,7 @@ namespace Microsoft.Xna.Framework.Audio
                     mChannel.setReverbProperties(ref rcp);
                 }
 #endif
-#endif
+//#endif
             }
         }
 

@@ -44,12 +44,9 @@ namespace FMOD
                 result = system.init(MAX_SOUND_CHANNELS, FMOD.INITFLAGS.SOFTWARE_OCCLUSION, (IntPtr)null);
                 ERRCHECK(result);
                 
-#if NACL
-                // only reverb on fmod because its weird on PC
                 /*                               FMOD.                 Instance  Env   Diffus  Room   RoomHF  RmLF DecTm   DecHF  DecLF   Refl  RefDel   Revb  RevDel  ModTm  ModDp   HFRef    LFRef   Diffus  Densty  FLAGS */
                 FMOD.REVERB_PROPERTIES massive = new FMOD.REVERB_PROPERTIES(0, 23, 0.50f, 0, 0, 0, 5.00f, 0.5f, 1.0f, 0, 0.005f, 0, 0.005f, 0.25f, 0.000f, 5000.0f, 250.0f, 50.0f, 66.0f, 0x3f);
                 system.setReverbProperties(ref massive);
-#endif
             }
         }
 
