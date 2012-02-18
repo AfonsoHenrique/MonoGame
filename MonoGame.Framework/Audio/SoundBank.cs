@@ -47,7 +47,7 @@ namespace Microsoft.Xna.Framework.Audio
 
             int version = reader.ReadInt32();
             // anything else would be uncivilized -- run oggAct to correct this error
-            const int OSB_VERSION = 4;
+            const int OSB_VERSION = 5;
             Debug.Assert(version == OSB_VERSION, "rebuild your sound bank with oggact");
 
             int soundCount = reader.ReadInt32();

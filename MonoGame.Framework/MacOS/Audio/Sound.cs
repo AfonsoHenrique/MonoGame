@@ -103,8 +103,9 @@ namespace Microsoft.Xna.Framework.Audio
                 FMOD.RESULT result;
                 exinfo.cbsize = Marshal.SizeOf(exinfo);
                 exinfo.length = (uint)audiodata.Length;
-
-                result = FMOD.Framework.system.createSound(audiodata, (FMOD.MODE.SOFTWARE | FMOD.MODE.OPENMEMORY_POINT | FMOD.MODE.CREATECOMPRESSEDSAMPLE), ref exinfo, ref mSound);
+			
+				FMOD.MODE mode = (FMOD.MODE.SOFTWARE | FMOD.MODE.CREATESTREAM | FMOD.MODE.OPENMEMORY_POINT | FMOD.MODE.CREATECOMPRESSEDSAMPLE);
+                result = FMOD.Framework.system.createSound(audiodata, mode, ref exinfo, ref mSound);
                 ERRCHECK(result);
             }
 #endif
@@ -303,7 +304,7 @@ namespace Microsoft.Xna.Framework.Audio
                     else
                         file += "Streaming/";
                     file += data._streamIndex;
-                    file += ".mp3";
+                    file += ".ogg";
 
 
                     //Console.WriteLine("streaming audio " + file);
@@ -365,7 +366,7 @@ namespace Microsoft.Xna.Framework.Audio
                                 else
                                 {
                                     exinfo.length = (uint)bytesRead;
-                                    FMOD.MODE mode = FMOD.MODE.OPENMEMORY_POINT | FMOD.MODE.CREATECOMPRESSEDSAMPLE | FMOD.MODE.SOFTWARE;
+                                    FMOD.MODE mode = FMOD.MODE.OPENMEMORY_POINT | FMOD.MODE.CREATESTREAM | FMOD.MODE.CREATECOMPRESSEDSAMPLE | FMOD.MODE.SOFTWARE;
                                     if (data._looping)
                                         mode |= FMOD.MODE.LOOP_NORMAL;
                                     result = FMOD.Framework.system.createSound(mStreamBytes, mode, ref exinfo, ref mSound);

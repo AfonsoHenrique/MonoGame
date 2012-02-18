@@ -35,7 +35,7 @@ namespace Microsoft.Xna.Framework.Audio
     {
         internal SoundData[] mSounds;
         internal string BankName = "";
-        private const int OWB_VERSION = 4;
+        private const int OWB_VERSION = 5;
 
         private int mSoundReadIdx;
         private long[] mSizes = null;
