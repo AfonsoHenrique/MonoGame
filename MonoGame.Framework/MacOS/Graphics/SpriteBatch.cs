@@ -203,7 +203,8 @@ namespace Microsoft.Xna.Framework.Graphics
 			graphicsDevice.Textures._textures.Clear ();
 			
 			// unbinds shader
-			GL.UseProgram (0);
+			//GL.UseProgram (0);
+			graphicsDevice.UnsetGraphicsStates();
 			_effect = null;
 		}
 
