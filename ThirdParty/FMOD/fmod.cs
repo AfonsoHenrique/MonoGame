@@ -21,6 +21,8 @@ namespace FMOD
         public const int    number = 0x00043601;
 #if WIN64
         public const string dll    = "fmodex64";
+#elif MONOMAC
+		public const string dll	   = "fmodex_i386";
 #else
         public const string dll    = "fmodex";
 #endif
