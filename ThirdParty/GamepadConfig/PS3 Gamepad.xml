@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PadConfig xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <JoystickName>Controller</JoystickName>
+  <JoystickName>PLAYSTATION(R)3 Controller</JoystickName>
   <ID>0</ID>
   <LeftStick>
     <X>
@@ -28,7 +28,7 @@
       </Positive>
     </Y>
     <Press>
-      <ID>6</ID>
+      <ID>1</ID>
       <Type>Button</Type>
       <Negative>false</Negative>
     </Press>
@@ -59,81 +59,81 @@
       </Positive>
     </Y>
     <Press>
-      <ID>7</ID>
+      <ID>2</ID>
       <Type>Button</Type>
       <Negative>false</Negative>
     </Press>
   </RightStick>
   <Dpad>
     <Up>
-      <ID>0</ID>
+      <ID>4</ID>
       <Type>Button</Type>
       <Negative>false</Negative>
     </Up>
     <Down>
-      <ID>1</ID>
+      <ID>6</ID>
       <Type>Button</Type>
       <Negative>false</Negative>
     </Down>
     <Left>
-      <ID>2</ID>
+      <ID>7</ID>
       <Type>Button</Type>
       <Negative>false</Negative>
     </Left>
     <Right>
-      <ID>3</ID>
+      <ID>5</ID>
       <Type>Button</Type>
       <Negative>false</Negative>
     </Right>
   </Dpad>
   <Button_A>
-    <ID>11</ID>
+    <ID>14</ID>
     <Type>Button</Type>
     <Negative>false</Negative>
   </Button_A>
   <Button_B>
-    <ID>12</ID>
+    <ID>13</ID>
     <Type>Button</Type>
     <Negative>false</Negative>
   </Button_B>
   <Button_X>
-    <ID>13</ID>
+    <ID>15</ID>
     <Type>Button</Type>
     <Negative>false</Negative>
   </Button_X>
   <Button_Y>
-    <ID>14</ID>
+    <ID>12</ID>
     <Type>Button</Type>
     <Negative>false</Negative>
   </Button_Y>
   <Button_LB>
-    <ID>8</ID>
+    <ID>10</ID>
     <Type>Button</Type>
     <Negative>false</Negative>
   </Button_LB>
   <Button_RB>
-    <ID>9</ID>
+    <ID>11</ID>
     <Type>Button</Type>
     <Negative>false</Negative>
   </Button_RB>
   <Button_Start>
-    <ID>4</ID>
+    <ID>3</ID>
     <Type>Button</Type>
     <Negative>false</Negative>
   </Button_Start>
   <Button_Back>
-    <ID>5</ID>
+    <ID>0</ID>
     <Type>Button</Type>
     <Negative>false</Negative>
   </Button_Back>
   <LeftTrigger>
-    <ID>4</ID>
-    <Type>Axis</Type>
+    <ID>8</ID>
+    <Type>Button</Type>
     <Negative>false</Negative>
   </LeftTrigger>
   <RightTrigger>
-    <ID>5</ID>
-    <Type>Axis</Type>
+    <ID>9</ID>
+    <Type>Button</Type>
     <Negative>false</Negative>
   </RightTrigger>
 </PadConfig>

@@ -383,6 +383,7 @@
     <Folder Include="MacOS\Input\" />
     <Folder Include="MacOS\GamerServices\" />
     <Folder Include="MacOS\Storage\" />
+    <Folder Include="SDL.framework\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ThirdParty\Lidgren.Network\Lidgren.Network.MacOS.csproj">
@@ -393,6 +394,26 @@
   <ItemGroup>
     <Content Include="..\ThirdParty\FMOD\libfmodex_i386.dylib">
       <Link>libfmodex_i386.dylib</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\ThirdParty\GamepadConfig\SDL.framework\SDL">
+      <Link>SDL.framework\SDL</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\ThirdParty\GamepadConfig\SDL.framework\Versions\Current\SDL">
+      <Link>SDL.framework\Versions\Current\SDL</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\ThirdParty\GamepadConfig\SDL.framework\Versions\A\SDL">
+      <Link>SDL.framework\Versions\A\SDL</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\ThirdParty\GamepadConfig\Xbox 360 Gamepad.xml">
+      <Link>Xbox 360 Gamepad.xml</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\ThirdParty\GamepadConfig\PS3 Gamepad.xml">
+      <Link>PS3 Gamepad.xml</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
