@@ -593,7 +593,7 @@ namespace Microsoft.Xna.Framework
 			string oldTitle = _gameWindow.Title;
 			
 			NSMenu.MenuBarVisible = true;
-			_mainWindow.StyleMask = NSWindowStyle.Titled | NSWindowStyle.Closable;
+			_mainWindow.StyleMask = NSWindowStyle.Titled | NSWindowStyle.Closable | NSWindowStyle.Miniaturizable;
 
 			if (oldTitle != null)
 				_gameWindow.Title = oldTitle;
@@ -705,7 +705,10 @@ namespace Microsoft.Xna.Framework
 		}
 
 		protected virtual void Update (GameTime gameTime)
-		{			
+		{		
+			if( !IsActive )
+				return;
+			
 			if (_initialized) { // && !Guide.IsVisible ) {
 				
 				// Changed from foreach to for loop in case the GameComponents's Update method
@@ -746,6 +749,9 @@ namespace Microsoft.Xna.Framework
 
 		protected virtual void Draw (GameTime gameTime)
 		{
+			if( !IsActive )
+				return;
+			
 			if (_initializing) {
 				if (spriteBatch != null) {
 					spriteBatch.Begin ();
