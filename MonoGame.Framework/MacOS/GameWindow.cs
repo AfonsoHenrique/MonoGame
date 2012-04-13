@@ -477,7 +477,9 @@ namespace Microsoft.Xna.Framework
 		public override void ViewWillMoveToWindow (NSWindow newWindow)
 		{
 			//Console.WriteLine("View will move to window");
-			if (_trackingArea != null) RemoveTrackingArea(_trackingArea);
+			if (_trackingArea != null) 
+				RemoveTrackingArea(_trackingArea);
+			
 			_trackingArea = new NSTrackingArea(Frame,
 			                      	NSTrackingAreaOptions.MouseMoved | 
 			                        NSTrackingAreaOptions.MouseEnteredAndExited |
@@ -487,7 +489,6 @@ namespace Microsoft.Xna.Framework
 				NSTrackingAreaOptions.CursorUpdate,
 			                      this, new NSDictionary());
 			AddTrackingArea(_trackingArea);
-
 		}
 
 		// These variables are to handle our custom cursor for when IsMouseVisible is false.
@@ -497,7 +498,6 @@ namespace Microsoft.Xna.Framework
 		NSCursor cursor = null;		// Our custom cursor
 		public override void ResetCursorRects ()
 		{
-
 			// If we do not have a cursor then we create an image size 1 x 1
 			// and then create our custom cursor with clear colors
 			if (cursor == null) {
@@ -703,11 +703,14 @@ namespace Microsoft.Xna.Framework
 				break;
 			}			
 		}
-
+		
 		private void SetMousePosition (PointF location)
 		{
-			Mouse.SetPosition ((int)location.X, (int)(ClientBounds.Height - location.Y));
-
+			PointF viewPoint = location;
+			if( game.GraphicsDevice.PresentationParameters.IsFullScreen )
+				viewPoint = ConvertPointFromView( location, null );
+			
+			Mouse.SetPosition ((int)viewPoint.X, (int)(ClientBounds.Height - viewPoint.Y));
 		}
 
 	}
