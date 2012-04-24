@@ -469,6 +469,7 @@ namespace Microsoft.Xna.Framework
 		{
 			return true;
 		}
+		
 		public override void CursorUpdate (NSEvent theEvent)
 		{
 			base.CursorUpdate (theEvent);
@@ -506,10 +507,10 @@ namespace Microsoft.Xna.Framework
 			}
 
 			// if the cursor is not to be visible then we us our custom cursor.
-			if (!game.IsMouseVisible)
-				AddCursorRect(Frame, cursor);
-			else
-				AddCursorRect(Frame, NSCursor.CurrentSystemCursor);
+			//if ( !game.IsMouseVisible )
+			//	AddCursorRect(Frame, cursor);
+			//else
+			AddCursorRect(Frame, NSCursor.CurrentSystemCursor);
 
 		}
 
@@ -526,7 +527,7 @@ namespace Microsoft.Xna.Framework
 			var kbs = new KeyboardState (_keyStates.ToArray ());
 			Keyboard.State = kbs;
 		}
-		
+
 		// This method should only be called when necessary like when the Guide is displayed
 		internal void ClearKeyCacheState() {
 			_keys.Clear();	
@@ -618,6 +619,18 @@ namespace Microsoft.Xna.Framework
 		{
 			PointF loc = theEvent.LocationInWindow;
 			SetMousePosition (loc);
+		}
+		
+		public override void MouseExited( NSEvent theEvent )
+		{
+			NSCursor.Unhide();
+			base.MouseExited( theEvent );	
+		}
+		
+		public override void MouseEntered( NSEvent theEvent )
+		{
+			NSCursor.Hide();
+			base.MouseEntered( theEvent );
 		}
 		
 		public override void RightMouseDown (NSEvent theEvent)
