@@ -511,6 +511,7 @@ namespace Microsoft.Xna.Framework
 			//	AddCursorRect(Frame, cursor);
 			//else
 			AddCursorRect(Frame, NSCursor.CurrentSystemCursor);
+			NSCursor.Hide();
 
 		}
 
