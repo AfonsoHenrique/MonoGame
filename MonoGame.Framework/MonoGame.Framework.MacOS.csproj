@@ -408,5 +408,9 @@
       <Link>libSDL-1.2.0.dylib</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="..\ThirdParty\GamepadConfig\Xbox 360 Wireless Receiver.xml">
+      <Link>Xbox 360 Wireless Receiver.xml</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 </Project>

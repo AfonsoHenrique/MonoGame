@@ -265,6 +265,7 @@ namespace Microsoft.Xna.Framework.Input
 				s_padConfigs.Clear();
 				string root = NSBundle.MainBundle.ResourcePath;
 				LoadConfig( Path.Combine( root, "Xbox 360 Gamepad.xml" ));
+				LoadConfig( Path.Combine( root, "Xbox 360 Wireless Receiver.xml" ));
 				LoadConfig( Path.Combine( root, "PS3 Gamepad.xml"));
                 
 				try
