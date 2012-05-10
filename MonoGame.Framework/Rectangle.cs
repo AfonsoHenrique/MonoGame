@@ -245,7 +245,38 @@ namespace Microsoft.Xna.Framework
                 result = new Rectangle(0, 0, 0, 0);
             }
         }
+		
+        public static Rectangle Union(Rectangle value1, Rectangle value2)
+        {
+            Rectangle rectangle;
+            Union(ref value1, ref value2, out rectangle);
+            return rectangle;
+        }
 
+        public static void Union(ref Rectangle value1, ref Rectangle value2, out Rectangle result)
+        {
+            if (value1 == Empty) 
+            {
+                result = value2;
+                return;
+            }
+            else if (value1 == Empty) 
+            {
+                result = value1;
+                return;
+            }
+
+            // save off values in case result and value1 or result and value2 are the same
+            int l = Math.Min(value1.X, value2.X);
+            int t = Math.Min(value1.Y, value2.Y);
+            int r = Math.Max( value1.Right, value2.Right );
+            int b = Math.Max( value1.Bottom, value2.Bottom );
+
+            result.X = l;
+            result.Y = t;
+            result.Width = r - l;
+            result.Height = b - t;
+        }
         #endregion Public Methods
     }
 }
