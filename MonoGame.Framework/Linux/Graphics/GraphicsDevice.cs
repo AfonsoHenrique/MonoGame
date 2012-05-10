@@ -49,6 +49,10 @@ namespace Microsoft.Xna.Framework.Graphics
 {	
 	public class GraphicsDevice : IDisposable
 	{
+		#region Events
+		public event EventHandler DeviceReset;
+		#endregion
+
 		private All _preferedFilter;
 		private int _activeTexture = -1;
 		private Viewport _viewport;
@@ -243,17 +247,20 @@ namespace Microsoft.Xna.Framework.Graphics
 
 		public void Reset ()
 		{
-			throw new NotImplementedException ();
+			if( DeviceReset != null )
+				DeviceReset(this, EventArgs.Empty );
 		}
 
 		public void Reset (Microsoft.Xna.Framework.Graphics.PresentationParameters presentationParameters)
 		{
-			throw new NotImplementedException ();
+			if( DeviceReset != null )
+				DeviceReset(this, EventArgs.Empty );
 		}
 
 		public void Reset (Microsoft.Xna.Framework.Graphics.PresentationParameters presentationParameters, GraphicsAdapter graphicsAdapter)
 		{
-			throw new NotImplementedException ();
+			if( DeviceReset != null )
+				DeviceReset(this, EventArgs.Empty );
 		}
 
 		public Microsoft.Xna.Framework.Graphics.DisplayMode DisplayMode {
@@ -625,6 +632,5 @@ namespace Microsoft.Xna.Framework.Graphics
 
 			throw new NotSupportedException ();
 		}
-
 	}
 }
