@@ -342,11 +342,11 @@ namespace Microsoft.Xna.Framework.Content
                             }
 
                             decompressedStream.Seek(0, SeekOrigin.Begin);
-                            reader = new ContentReader(this, decompressedStream, this.graphicsDeviceService.GraphicsDevice, originalAssetName);
+                            reader = new ContentReader(this, decompressedStream, this.graphicsDeviceService.GraphicsDevice, originalAssetName, version);
                         }
                         else
                         {
-                            reader = new ContentReader(this, stream, this.graphicsDeviceService.GraphicsDevice, originalAssetName);
+                            reader = new ContentReader(this, stream, this.graphicsDeviceService.GraphicsDevice, originalAssetName, version);
                         }
 
                         using (reader)

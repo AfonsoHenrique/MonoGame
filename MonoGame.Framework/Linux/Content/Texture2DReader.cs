@@ -71,6 +71,8 @@ namespace Microsoft.Xna.Framework.Content
 				return FileName+".gif";
 			if (File.Exists(FileName+".pict"))
 				return FileName+".pict";
+			if (File.Exists(FileName+".tga"))
+				return FileName+".tga";
 			
 			return null;
 		}
@@ -79,31 +81,54 @@ namespace Microsoft.Xna.Framework.Content
 		{
 			Texture2D texture = null;
 			
-			SurfaceFormat surfaceFormat = (SurfaceFormat)reader.ReadInt32 ();
-			int width = (reader.ReadInt32 ());
-			int height = (reader.ReadInt32 ());
-			int levelCount = (reader.ReadInt32 ());
-			SetDataOptions compressionType = (SetDataOptions)reader.ReadInt32 ();
-			int imageLength = width * height * 4;
+			SurfaceFormat surfaceFormat;
+			if (reader.version < 5) {
+				SurfaceFormat_Legacy legacyFormat = (SurfaceFormat_Legacy)reader.ReadInt32 ();
+				switch(legacyFormat) {
+				case SurfaceFormat_Legacy.Dxt1:
+					surfaceFormat = SurfaceFormat.Dxt1;
+					break;
+				case SurfaceFormat_Legacy.Dxt3:
+					surfaceFormat = SurfaceFormat.Dxt3;
+					break;
+				case SurfaceFormat_Legacy.Dxt5:
+					surfaceFormat = SurfaceFormat.Dxt5;
+					break;
+				case SurfaceFormat_Legacy.Color:
+					surfaceFormat = SurfaceFormat.Color;
+					break;
+				case SurfaceFormat_Legacy.Bgra4444:
+					surfaceFormat = SurfaceFormat.Bgra4444;
+					break;
+				case SurfaceFormat_Legacy.Bgra5551:
+					surfaceFormat = SurfaceFormat.Bgra5551;
+					break;
+				case SurfaceFormat_Legacy.Alpha8:
+					surfaceFormat = SurfaceFormat.Alpha8;
+					break;
+				default:
+					throw new NotImplementedException();
+				}
+			} else {
+				surfaceFormat = (SurfaceFormat)reader.ReadInt32 ();
+			}
+			int width = reader.ReadInt32 ();
+			int height = reader.ReadInt32 ();
+			int levelCount = reader.ReadInt32 ();
+
+			int imageLength = reader.ReadInt32 ();
 			
-			if (surfaceFormat == SurfaceFormat.Dxt3)
+			byte[] imageBytes = reader.ReadBytes (imageLength);
+			IntPtr ptr = Marshal.AllocHGlobal (imageBytes.Length);
+			try
 			{
-				ESTexture2D temp = ESTexture2D.InitiFromDxt3File(reader,imageLength,width,height);
+				Marshal.Copy (imageBytes, 0, ptr, imageBytes.Length);
+				ESTexture2D temp = new ESTexture2D(ptr, imageBytes.Length, surfaceFormat, width, height, new Size (width, height), All.Linear);
 				texture = new Texture2D (new ESImage (temp));
 			}
-			else {
-				byte[] imageBytes = reader.ReadBytes (imageLength);
-				IntPtr ptr = Marshal.AllocHGlobal (imageLength);
-				try 
-				{
-					Marshal.Copy (imageBytes, 0, ptr, imageLength);					
-					ESTexture2D temp = new ESTexture2D(ptr, SurfaceFormat.Color, width, height, new Size (width, height), All.Linear);
-					texture = new Texture2D (new ESImage (temp));					
-				} 
-				finally 
-				{		
-					Marshal.FreeHGlobal (ptr);
-				}
+			finally
+			{
+				Marshal.FreeHGlobal (ptr);
 			}
 			
 			return texture;
