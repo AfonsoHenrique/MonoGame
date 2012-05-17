@@ -203,9 +203,10 @@ namespace Microsoft.Xna.Framework.Content
                     throw new InvalidOperationException("No Graphics Device Service");
                 }
             }
-
+			
             // Replace Windows path separators with local path separators
             assetName = GetFilename(assetName);
+			bool loadAsXnb = false;
 
             // Get the real file name
             if ((typeof(T) == typeof(Curve))) 
@@ -239,13 +240,15 @@ namespace Microsoft.Xna.Framework.Content
 
             if (string.IsNullOrEmpty(assetName))
             {
-                throw new ContentLoadException("Could not load " + originalAssetName + " asset!");
-            }
-
-            if (!Path.HasExtension(assetName))
+				loadAsXnb = true;
+				assetName = originalAssetName;
+                //throw new ContentLoadException("Could not load " + originalAssetName + " asset!");
+            } else if (!Path.HasExtension(assetName)) {
                 assetName = string.Format("{0}.xnb", assetName);
-
-            if (Path.GetExtension(assetName).ToLower() == ".xnb")
+			} else if (Path.GetExtension(assetName).ToLower() == ".xnb") {
+				loadAsXnb = true;
+			}
+            if (loadAsXnb)
             {
                 // Load a XNB file
                 Stream stream = OpenStream(assetName);
@@ -362,7 +365,7 @@ namespace Microsoft.Xna.Framework.Content
                         stream.Dispose();
                     }
                 }
-            }
+			}
             else
             {
                 if ((typeof(T) == typeof(Texture2D)))
@@ -402,7 +405,7 @@ namespace Microsoft.Xna.Framework.Content
                     result = new Effect(graphicsDeviceService.GraphicsDevice, assetName);
                 }
             }
-
+			
             if (result == null)
             {
                 throw new ContentLoadException("Could not load " + originalAssetName + " asset!");
