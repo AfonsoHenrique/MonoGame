@@ -47,6 +47,7 @@ namespace Microsoft.Xna.Framework.Audio
 		public const int ContentVersion = 39;
 		
 		internal Dictionary<string, WaveBank> Wavebanks = new Dictionary<string, WaveBank>();
+		AudioCategory[] mCategories;
 		
 		public AudioEngine (string settingsFile)
 		{
@@ -55,6 +56,18 @@ namespace Microsoft.Xna.Framework.Audio
 		public AudioEngine (string settingsFile, TimeSpan lookAheadTime, string rendererId)
 		{
 		}
+		
+        public AudioCategory GetCategory(string name)
+        {
+            for (int i = 0; i < mCategories.Length; i++)
+            {
+                if (mCategories[i].mName == name)
+                {
+                    return mCategories[i];
+                }
+            }
+            return null;
+        }
 		
 		public void Update ()
 		{

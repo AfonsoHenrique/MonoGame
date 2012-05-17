@@ -352,6 +352,7 @@
     <Compile Include="Graphics\Model.cs" />
     <Compile Include="Graphics\ModelBone.cs" />
     <Compile Include="Graphics\ModelMesh.cs" />
+    <Compile Include="Audio\AudioCategory.cs" />
     <Compile Include="GamerServices\GuideAlreadyVisibleException.cs" />
   </ItemGroup>
   <ItemGroup>
