@@ -33,6 +33,7 @@ namespace Microsoft.Xna.Framework.Audio
     {
         internal SoundEffectInstance[] sounds;
         internal string BankName;
+		internal AudioEngine mAudioEngine;
 
         struct Segment
         {
@@ -79,6 +80,28 @@ namespace Microsoft.Xna.Framework.Audio
         
         public WaveBank(AudioEngine audioEngine, string nonStreamingWaveBankFilename)
         {
+            nonStreamingWaveBankFilename = nonStreamingWaveBankFilename.Replace('\\',Path.DirectorySeparatorChar);
+			int start = nonStreamingWaveBankFilename.LastIndexOf(Path.DirectorySeparatorChar) + 1;
+            BankName = nonStreamingWaveBankFilename.Substring(start, nonStreamingWaveBankFilename.Length - start - 4);
+
+            BinaryReader reader = new BinaryReader(new FileStream(nonStreamingWaveBankFilename, FileMode.Open));
+            int version = reader.ReadInt32();
+			if (version == 5) {
+				// OWB (ogg wave bank)
+				ParseOWB(reader);
+			} else {
+				ParseXWB(reader);
+			}
+			audioEngine.WaveBanks.Add (BankName, this);
+			mAudioEngine = audioEngine;
+		}
+		
+		private void ParseOWB(BinaryReader reader)
+		{
+		}
+		
+		private void ParseXWB(BinaryReader reader)
+		{
             //XWB PARSING
             //Adapted from MonoXNA
             //Originally adaped from Luigi Auriemma's unxwb
@@ -96,12 +119,6 @@ namespace Microsoft.Xna.Framework.Audio
             wavebankentry.PlayRegion.Offset = 0;
 
             int wavebank_offset = 0;
-
-            // Check for windows-style directory separator character
-            nonStreamingWaveBankFilename = nonStreamingWaveBankFilename.Replace('\\',Path.DirectorySeparatorChar);
-
-            BinaryReader reader = new BinaryReader(new FileStream(nonStreamingWaveBankFilename, FileMode.Open));
-            reader.ReadBytes(4);
 
             wavebankheader.Version = reader.ReadInt32();
 
@@ -405,14 +422,38 @@ namespace Microsoft.Xna.Framework.Audio
                 }
                 
             }
-			
-			audioEngine.Wavebanks[BankName] = this;
         }
+		
+        public WaveBank(AudioEngine audioEngine, string streamingWaveBankFilename, int offset, short packetSize)
+		{
+            streamingWaveBankFilename = streamingWaveBankFilename.Replace('\\',Path.DirectorySeparatorChar);
+            int start = streamingWaveBankFilename.LastIndexOf(Path.DirectorySeparatorChar) + 1;
+            BankName = streamingWaveBankFilename.Substring(start, streamingWaveBankFilename.Length - start - 4);
+
+			BinaryReader reader = new BinaryReader(new FileStream(streamingWaveBankFilename, FileMode.Open));
+            int version = reader.ReadInt32();
+			if (version == 5) {
+				// OWB (ogg wave bank)
+				ParseOWB(reader);
+			} else {
+				ParseXWB(reader);
+			}
+
+			audioEngine.WaveBanks.Add (BankName, this);
+			mAudioEngine = audioEngine;
+		}
 
 		#region IDisposable implementation
 		public void Dispose ()
 		{
-			throw new NotImplementedException ();
+			if (sounds != null) {
+				for (uint i = 0; i < sounds.Length; i++) {
+					sounds[i].Dispose();
+					sounds[i] = null;
+				}
+			}
+			sounds = null;
+			mAudioEngine.WaveBanks.Remove(BankName);
 		}
 		#endregion
     }

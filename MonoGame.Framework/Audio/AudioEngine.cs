@@ -46,8 +46,10 @@ namespace Microsoft.Xna.Framework.Audio
 	{
 		public const int ContentVersion = 39;
 		
-		internal Dictionary<string, WaveBank> Wavebanks = new Dictionary<string, WaveBank>();
 		AudioCategory[] mCategories;
+		
+		internal List<SoundBank> SoundBanks = new List<SoundBank>();
+		internal Dictionary<string, WaveBank> WaveBanks = new Dictionary<string, WaveBank>();
 		
 		public AudioEngine (string settingsFile)
 		{
@@ -77,7 +79,14 @@ namespace Microsoft.Xna.Framework.Audio
 		#region IDisposable implementation
 		public void Dispose ()
 		{
-			throw new NotImplementedException ();
+			foreach (SoundBank soundbank in SoundBanks)
+			{
+				soundbank.Dispose();
+			}
+			foreach (WaveBank wavebank in WaveBanks.Values)
+			{
+				wavebank.Dispose();
+			}
 		}
 		#endregion
 	}

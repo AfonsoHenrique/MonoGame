@@ -46,6 +46,7 @@ namespace Microsoft.Xna.Framework.Audio
             // Check for windows-style directory separator character
             filename = fileName.Replace('\\',Path.DirectorySeparatorChar);
 			audioengine = audioEngine;
+			audioengine.SoundBanks.Add(this);
 		}
 		
 		//Defer loading because some programs load soundbanks before wavebanks
@@ -103,7 +104,7 @@ namespace Microsoft.Xna.Framework.Audio
 			waveBanks = new WaveBank[numWaveBanks];
 			for (int i=0; i<numWaveBanks; i++) {
 				string bankname = System.Text.Encoding.UTF8.GetString(soundbankreader.ReadBytes(64)).Replace("\0","");
-				waveBanks[i] = audioengine.Wavebanks[bankname];
+				waveBanks[i] = audioengine.WaveBanks[bankname];
 			}
 			
 			//parse cue name table
@@ -227,7 +228,7 @@ namespace Microsoft.Xna.Framework.Audio
 		#region IDisposable implementation
 		public void Dispose ()
 		{
-			throw new NotImplementedException ();
+			audioengine.SoundBanks.Remove(this);
 		}
 		#endregion
     }
