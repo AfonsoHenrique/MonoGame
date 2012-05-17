@@ -71,6 +71,15 @@ namespace Microsoft.Xna.Framework.Audio
             return null;
         }
 		
+        public float GetGlobalVariable(string name)
+        {
+			throw new NotImplementedException();
+        }
+		
+        public void SetGlobalVariable(string name, float value)
+        {
+        }
+		
 		public void Update ()
 		{
 			// TODO throw new NotImplementedException ();
