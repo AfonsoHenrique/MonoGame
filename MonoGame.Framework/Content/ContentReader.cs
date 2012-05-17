@@ -109,7 +109,7 @@ namespace Microsoft.Xna.Framework.Content
             }
 
             // Read shared resources
-            if (sharedResourceCount > 0)
+            if (sharedResourceCount > 1)
             {
                 ReadSharedResources(sharedResourceCount);
             }
