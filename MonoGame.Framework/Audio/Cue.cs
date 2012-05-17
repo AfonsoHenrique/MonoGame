@@ -159,12 +159,26 @@ namespace Microsoft.Xna.Framework.Audio
 				throw new NotImplementedException();
 			}
 		}
+
+		public void Apply3D(AudioListener listener, AudioEmitter emitter)
+		{
+			SetVariable("Distance", (listener.Position - emitter.Position).Length());
+		}
+
 		
 		#region IDisposable implementation
 		public void Dispose ()
 		{
 			//_sound.Dispose();
 		}
+		public bool IsDisposed
+		{
+			get
+			{
+				return false;//mData == null;
+			}
+		}
+
 		#endregion
 	}
 }
