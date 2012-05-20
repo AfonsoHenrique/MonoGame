@@ -209,6 +209,11 @@ namespace Microsoft.Xna.Framework.Graphics
                 return _height;
             }
         }
+		
+		public static Texture2D FromStream(GraphicsDevice graphicsDevice, Stream textureStream)
+		{
+			return FromFile (graphicsDevice, textureStream);
+		}
 
         public static Texture2D FromFile(GraphicsDevice graphicsDevice, Stream textureStream)
         {
