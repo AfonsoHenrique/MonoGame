@@ -350,7 +350,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			GL.UseProgram(_parentEffect.CurrentTechnique.Passes[0].shaderProgram);
 			GL.ActiveTexture(TextureUnit.Texture1);
 			GL.BindTexture(TextureTarget.Texture2D,value._textureId);
-			GL.Uniform1(internalIndex, value._textureId);
+			GL.Uniform1 (internalIndex, 1);
 			_cachedValue = value._textureId;
 			GL.UseProgram(0);
 		}

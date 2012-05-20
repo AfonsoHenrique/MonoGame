@@ -342,19 +342,21 @@
     <Compile Include="Content\ContentReaders\AlphaTestEffectReader.cs" />
     <Compile Include="Graphics\Effect\AlphaTestEffect.cs" />
     <Compile Include="Graphics\Effect\EffectHelpers.cs" />
-    <Compile Include="Graphics\Effect\BasicEffect.cs" />
     <Compile Include="Desktop\Graphics\GraphicsExtensions.cs" />
     <Compile Include="Graphics\Vertices\IndexElementSize.cs" />
     <Compile Include="Graphics\Vertices\IndexBuffer.cs" />
     <Compile Include="Graphics\Effect\AlphaTestEffectCode.cs" />
     <Compile Include="Graphics\States\GLStateManager.cs" />
-    <Compile Include="Windows\Graphics\Effect.cs" />
     <Compile Include="Graphics\Model.cs" />
     <Compile Include="Graphics\ModelBone.cs" />
     <Compile Include="Graphics\ModelMesh.cs" />
     <Compile Include="Audio\AudioCategory.cs" />
     <Compile Include="GamerServices\GuideAlreadyVisibleException.cs" />
     <Compile Include="Content\ContentReaders\EffectReader.cs" />
+    <Compile Include="Linux\Graphics\Effect\Effect.cs" />
+    <Compile Include="Linux\Graphics\Effect\BasicEffect.cs" />
+    <Compile Include="Linux\Graphics\Effect\PSBasicEffect.cs" />
+    <Compile Include="Linux\Graphics\Effect\VSBasicEffect.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ThirdParty\Lidgren.Network\Lidgren.Network.Linux.csproj">

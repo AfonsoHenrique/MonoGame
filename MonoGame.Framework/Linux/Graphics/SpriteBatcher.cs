@@ -99,7 +99,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			return b.Depth.CompareTo(a.Depth);
 		}
 		
-		public void DrawBatch ( SpriteSortMode sortMode, SamplerState samplerState )
+		public void DrawBatch ( SpriteSortMode sortMode, SamplerState samplerState, Effect effect )
 		{
 			// nothing to do
 			if ( _batchItemList.Count == 0 )
@@ -146,7 +146,13 @@ namespace Microsoft.Xna.Framework.Graphics
 					GL.ActiveTexture(TextureUnit.Texture0);
 					GL.BindTexture ( TextureTarget.Texture2D, texID );
 
-					samplerState.Activate ();
+					//samplerState.Activate();
+					if( effect != null )
+					{
+						int uniformIndex = GL.GetUniformLocation( effect.CurrentTechnique.Passes[0].shaderProgram, "TextureSampler" );
+						if( uniformIndex >= 0 )
+							GL.Uniform1(uniformIndex,0);	
+					}
 				}
 				// store the SpriteBatchItem data in our vertexArray
 				_vertexArray[index++] = item.vertexTL;

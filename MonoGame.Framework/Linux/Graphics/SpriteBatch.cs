@@ -68,17 +68,69 @@ namespace Microsoft.Xna.Framework.Graphics
 			Begin (sortMode, blendState, samplerState, depthStencilState, rasterizerState, effect, Matrix.Identity);			
 		}
 
+		internal Rectangle ConvertScissorRect( Rectangle scissorRectangle )
+		{
+			Rectangle rect = scissorRectangle;
+			int height = GraphicsDevice.PresentationParameters.BackBufferHeight;
+			int width = GraphicsDevice.PresentationParameters.BackBufferWidth;
+			
+			switch (GraphicsDevice.PresentationParameters.DisplayOrientation) 
+			{
+				case DisplayOrientation.Portrait :
+				{
+					rect.Y = height - rect.Y - rect.Height;
+					break;
+				}
+
+				case DisplayOrientation.LandscapeLeft :
+				{		
+					var x = rect.X;
+					rect.X = width - rect.Height - rect.Y;
+					rect.Y = height - rect.Width - x;
+				
+					// Swap Width and Height
+					var w = rect.Width;
+					rect.Width = rect.Height;
+					rect.Height = w;	
+					break;
+				}
+
+				case DisplayOrientation.LandscapeRight :
+				{			
+					var x = rect.X;
+					rect.X = rect.Y;
+					rect.Y = x;
+					var w = rect.Width;
+					rect.Width = rect.Height;
+					rect.Height = w;
+					break;
+				}
+				
+				case DisplayOrientation.PortraitUpsideDown :
+				{
+					rect.Y = rect.X;
+					rect.X = width - rect.X - rect.Width;
+					break;
+				}
+				
+				case DisplayOrientation.Default :
+				{
+					rect.Y = height - rect.Y - rect.Height;
+					break;
+				}
+			}	
+			
+			return rect;
+		}
+
 		public void End ()
 		{					
 			// apply the custom effect if there is one
 			if (_effect != null) {
+				_effect.CurrentTechnique.Passes [0].Apply ();
 				
-				_effect.Apply ();
-				
-				if (graphicsDevice.Textures._textures.Count > 0) 
-				{
-					foreach (EffectParameter ep in _effect._textureMappings)
-					{
+				if (graphicsDevice.Textures._textures.Count > 0) {
+					foreach (EffectParameter ep in _effect._textureMappings) {
 						// if user didn't inform the texture index, we can't bind it
 						if (ep.UserInedx == -1)
 							continue;
@@ -93,30 +145,11 @@ namespace Microsoft.Xna.Framework.Graphics
 				}				
 			}
 
-			// Disable Blending by default = BlendState.Opaque
-			GL.Disable (EnableCap.Blend);
+			graphicsDevice.BlendState = _blendState;
+			graphicsDevice.RasterizerState = _rasterizerState;
+			graphicsDevice.DepthStencilState = _depthStencilState;
 			
-			// set the blend mode
-			if (_blendState == BlendState.NonPremultiplied) {
-				GL.BlendFunc (BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
-				GL.Enable (EnableCap.Blend);				
-			}
-
-			if (_blendState == BlendState.AlphaBlend) {
-				GL.BlendFunc (BlendingFactorSrc.One, BlendingFactorDest.OneMinusSrcAlpha);
-				GL.Enable (EnableCap.Blend);				
-			}
-
-			if (_blendState == BlendState.Additive) {
-				GL.BlendFunc (BlendingFactorSrc.SrcAlpha, BlendingFactorDest.One);
-				GL.Enable (EnableCap.Blend);				
-			}
-			
-			// set camera
-			GL.MatrixMode (MatrixMode.Projection);
-			GL.LoadIdentity ();		
-
-			Viewport vp = this.graphicsDevice.Viewport;
+			graphicsDevice.SetGraphicsStates();
 			
 			// Switch on the flags.
 			switch (this.graphicsDevice.PresentationParameters.DisplayOrientation) {
@@ -137,49 +170,29 @@ namespace Microsoft.Xna.Framework.Graphics
 					GL.Rotate (180, 0, 0, 1); 
 					break;
 				}
-
-			default:
-				{					
-					break;
-				}
 			}
 			
-			GL.Ortho (0, vp.Width, vp.Height, 0, -1, 1);
+			GL.Viewport (this.graphicsDevice.Viewport.X, this.GraphicsDevice.Viewport.Y, this.graphicsDevice.Viewport.Width, this.graphicsDevice.Viewport.Height);
 			
 			// Enable Scissor Tests if necessary
-			if (this.graphicsDevice.RasterizerState.ScissorTestEnable) {
+			if (this.graphicsDevice.RasterizerState.ScissorTestEnable) 
+			{
 				GL.Enable (EnableCap.ScissorTest);				
+				Rectangle scissorRect = ConvertScissorRect( GraphicsDevice.ScissorRectangle );
+				GL.Scissor( scissorRect.X, scissorRect.Y, scissorRect.Width, scissorRect.Height );
 			}
 
-			GL.MatrixMode (MatrixMode.Modelview);			
-			
-			GL.Viewport (0, 0, vp.Width, vp.Height);
-			//GL.Viewport (vp.X, vp.Y, vp.Width, vp.Height);
-
-			// Enable Scissor Tests if necessary
-			if (this.graphicsDevice.RasterizerState.ScissorTestEnable) {
-				GL.Scissor (this.graphicsDevice.ScissorRectangle.X, this.graphicsDevice.ScissorRectangle.Y, this.graphicsDevice.ScissorRectangle.Width, this.graphicsDevice.ScissorRectangle.Height);
-			}
-
-			GL.LoadMatrix (ref _matrix.M11);
-
-			// Initialize OpenGL states (ideally move this to initialize somewhere else)	
-			GL.Disable (EnableCap.DepthTest);
-			GL.TexEnv (TextureEnvTarget.TextureEnv, TextureEnvParameter.TextureEnvMode, (int)All.BlendSrc);
-			GL.Enable (EnableCap.Texture2D);
 			GL.EnableClientState (ArrayCap.VertexArray);
 			GL.EnableClientState (ArrayCap.ColorArray);
 			GL.EnableClientState (ArrayCap.TextureCoordArray);
 
-			// Enable Culling for better performance
-			GL.Enable (EnableCap.CullFace);
-			GL.FrontFace (FrontFaceDirection.Cw);
-			GL.Color4 (1.0f, 1.0f, 1.0f, 1.0f);			
+			GL.UniformMatrix4( _effect.Parameters["u_modelview"].UniformLocation, 1, false, ref _matrix.M11 );
 
-			_batcher.DrawBatch (_sortMode, _samplerState);
+			_batcher.DrawBatch (_sortMode, _samplerState, _effect);
 
 			// Disable Scissor Tests if necessary
-			if (this.graphicsDevice.RasterizerState.ScissorTestEnable) {
+			if (this.graphicsDevice.RasterizerState.ScissorTestEnable) 
+			{
 				GL.Disable (EnableCap.ScissorTest);
 			}
 
@@ -187,11 +200,9 @@ namespace Microsoft.Xna.Framework.Graphics
 			graphicsDevice.Textures._textures.Clear ();
 
 			// unbinds shader
-			if (_effect != null)
-			{
-				GL.UseProgram (0);
-				_effect = null;
-			}
+			//GL.UseProgram (0);
+			graphicsDevice.UnsetGraphicsStates();
+			_effect = null;
 		}
 
 		public void Draw (Texture2D texture,

@@ -14,7 +14,8 @@ namespace Microsoft.Xna.Framework.Graphics
 		{
 			// We only create the fragment code for now
 			// There needs to be a vertex shader created as well as per the Microsoft BaseEffects
-			CreateFragmentShaderFromSource (SpriteEffectCode.SpriteEffectFragmentCode());
+			CreateFragmentShaderFromSource(DEFAULT_FRAGMENT);
+			CreateVertexShaderFromSource(DEFAULT_VERTEX);
 			DefineTechnique ("SpriteBatch", "", 0, 0);
 			CurrentTechnique = Techniques ["SpriteBatch"];
 		}	

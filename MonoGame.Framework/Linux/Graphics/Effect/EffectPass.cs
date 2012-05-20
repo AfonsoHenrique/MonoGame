@@ -18,7 +18,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			// Tell the GL Context to use the program
 			GL.UseProgram (shaderProgram);	
 
-			//_technique._effect.Apply();
+			_technique._effect.OnApply();
 
 		}
 
@@ -75,6 +75,65 @@ namespace Microsoft.Xna.Framework.Graphics
 			string name = String.Format("Technique {0} - Pass {1}: ",_technique.Name, Name);
 			ShaderLog(name,shaderProgram);				
 			
+		}
+
+		internal void UpdatePass(int shader, int fragment)
+		{
+			int count = 0;
+			//int[] objs = new int[10];
+			int obj = 0;
+			int max = 10;
+			// Detach all the shaders
+			GL.GetAttachedShaders(shaderProgram,max, out count, out obj);
+			while (count > 0) {
+				GL.DetachShader(shaderProgram, obj);
+				GL.GetAttachedShaders(shaderProgram,max, out count, out obj);
+			}
+//			for (int x = 0; x < count; x++) {
+//				GL.DetachShader(shaderProgram, obj);
+//			}
+
+			// Attach our compiled shaders
+			if ( shader > 0)
+				GL.AttachShader (shaderProgram, shader);
+			if ( fragment > 0)
+				GL.AttachShader (shaderProgram, fragment);
+
+			// Choose the appropriate shader4 GL call based on the available extensions
+			var extensions = new HashSet<string>(GL.GetString(StringName.Extensions).Split(new char[] { ' ' }));
+			// Set the parameters
+			if (extensions.Contains("GL_EXT_geometry_shader4"))
+			{
+				GL.Ext.ProgramParameter (shaderProgram, ExtGeometryShader4.GeometryInputTypeExt, (int)All.Lines);
+				GL.Ext.ProgramParameter (shaderProgram, ExtGeometryShader4.GeometryOutputTypeExt, (int)All.Line);
+			}
+			else if (extensions.Contains("GL_ARB_geometry_shader4"))
+			{
+				GL.Arb.ProgramParameter (shaderProgram, ArbGeometryShader4.GeometryInputTypeArb, (int)All.Lines);	
+				GL.Arb.ProgramParameter (shaderProgram, ArbGeometryShader4.GeometryOutputTypeArb, (int)All.Line);				
+			}
+			else
+			{
+				GL.ProgramParameter (shaderProgram, Version32.GeometryInputType, (int)All.Lines);
+				GL.ProgramParameter (shaderProgram, Version32.GeometryOutputType, (int)All.Line);
+			}
+
+			// Set the max vertices
+			int maxVertices;
+			GL.GetInteger (GetPName.MaxGeometryOutputVertices, out maxVertices);
+
+			if (extensions.Contains("GL_EXT_geometry_shader4"))
+				GL.Ext.ProgramParameter (shaderProgram, ExtGeometryShader4.MaxGeometryOutputVerticesExt, maxVertices);
+			else if (extensions.Contains("GL_ARB_geometry_shader4"))
+				GL.Arb.ProgramParameter (shaderProgram, ArbGeometryShader4.GeometryVerticesOutArb, maxVertices);
+			else
+				GL.ProgramParameter (shaderProgram, Version32.GeometryVerticesOut, maxVertices);
+
+			// Link the program
+			GL.LinkProgram (shaderProgram);
+			string name = String.Format("Technique {0} - Pass {1}: ",_technique.Name, Name);
+			ShaderLog(name,shaderProgram);
+			GL.UseProgram(shaderProgram);
 		}
 		
 		public string Name { get; set; }
