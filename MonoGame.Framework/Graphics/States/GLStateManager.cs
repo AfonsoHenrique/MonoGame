@@ -2,13 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using OpenTK.Graphics.ES20;
-using OpenTK.Graphics.ES11;
-using GL11 = OpenTK.Graphics.ES11.GL;
-using GL20 = OpenTK.Graphics.ES20.GL;
-using All11 = OpenTK.Graphics.ES11.All;
-using All20 = OpenTK.Graphics.ES20.All;
-
+using OpenTK.Graphics.OpenGL;
 
 namespace Microsoft.Xna.Framework.Graphics
 {
@@ -20,100 +14,249 @@ namespace Microsoft.Xna.Framework.Graphics
         private static GLStateEnabled _colorArray;
         private static GLStateEnabled _normalArray;
         private static GLStateEnabled _depthTest;
-        private static All11 _blendFuncSource;
-        private static All11 _blendFuncDest;
-        private static All11 _cull = All11.Ccw; // default
+        private static BlendingFactorSrc _blendFuncSource;
+        private static BlendingFactorDest _blendFuncDest;
+        private static All _cull = All.Ccw; // default
 
         public static void TextureCoordArray(bool enable)
         {						
             if (enable && (_textureCoordArray != GLStateEnabled.True))
-                GL11.EnableClientState(All11.TextureCoordArray);
+                GL.EnableClientState(ArrayCap.TextureCoordArray);
             else
-                GL11.DisableClientState(All11.TextureCoordArray);
+                GL.DisableClientState(ArrayCap.TextureCoordArray);
         }
 
         public static void VertexArray(bool enable)
         {
             if (enable && (_vertextArray != GLStateEnabled.True))
-                GL11.EnableClientState(All11.VertexArray);
+                GL.EnableClientState(ArrayCap.VertexArray);
             else
-                GL11.DisableClientState(All11.VertexArray);
+                GL.DisableClientState(ArrayCap.VertexArray);
         }
 
         public static void ColorArray(bool enable)
         {
             if (enable && (_colorArray != GLStateEnabled.True))
-                GL11.EnableClientState(All11.ColorArray);
+                GL.EnableClientState(ArrayCap.ColorArray);
             else
-                GL11.DisableClientState(All11.ColorArray);
+                GL.DisableClientState(ArrayCap.ColorArray);
         }
 
         public static void NormalArray(bool enable)
         {
             if (enable && (_normalArray != GLStateEnabled.True))
-                GL11.EnableClientState(All11.NormalArray);
+                GL.EnableClientState(ArrayCap.NormalArray);
             else
-                GL11.DisableClientState(All11.NormalArray);
+                GL.DisableClientState(ArrayCap.NormalArray);
         }
 
         public static void Textures2D(bool enable)
         {
             if (enable && (_textures2D != GLStateEnabled.True))
-                GL11.Enable(All11.Texture2D);
+                GL.Enable(EnableCap.Texture2D);
             else
-                GL11.Disable(All11.Texture2D);
+                GL.Disable(EnableCap.Texture2D);
         }
 
         public static void DepthTest(bool enable)
         {
             if (enable && (_depthTest != GLStateEnabled.True))
-                GL11.Enable(All11.DepthTest);
+                GL.Enable(EnableCap.DepthTest);
             else
-                GL11.Disable(All11.DepthTest);
+                GL.Disable(EnableCap.DepthTest);
         }
 
         public static void Blend(bool enable)
         {
-            GL11.Enable(All11.Blend);
+            GL.Enable(EnableCap.Blend);
         }
 
         public static void Viewport(Rectangle viewport)
         {
-            GL11.Viewport(viewport.X, viewport.Y, viewport.Width, viewport.Height);
+            GL.Viewport(viewport.X, viewport.Y, viewport.Width, viewport.Height);
         }
 
         public static void Projection(Matrix projection)
         {
-            GL11.MatrixMode(All11.Projection);
-            GL11.LoadMatrix(ref projection.M11);
+            GL.MatrixMode(MatrixMode.Projection);
+			GL.LoadIdentity();
+            GL.LoadMatrix(Matrix.ToFloatArray(projection));
             //GL11.Ortho(0, _device.DisplayMode.Width, _device.DisplayMode.Height, 0, -1, 1);
         }
+		
+		public static void View(Matrix view)
+		{
+			GL.MatrixMode(MatrixMode.Modelview);
+			GL.LoadIdentity();
+			GL.LoadMatrix(Matrix.ToFloatArray(view));
+			//GL11.Ortho(0, _device.DisplayMode.Width, _device.DisplayMode.Height, 0, -1, 1);
+		}
 
+		public static void World(Matrix world)
+		{
+			GL.MatrixMode(MatrixMode.Modelview);
+			GL.LoadIdentity();
+			GL.LoadMatrix(Matrix.ToFloatArray(world));
+		}
+		
         public static void WorldView(Matrix world, Matrix view)
         {
-            GL11.MatrixMode(All11.Modelview);
-            GL11.LoadMatrix(ref view.M11);
-			GL11.MultMatrix(ref world.M11);
-            //GL11.Ortho(0, _device.DisplayMode.Width, _device.DisplayMode.Height, 0, -1, 1);
+			Matrix worldView;
+			Matrix.Multiply(ref world, ref view, out worldView);
+            GL.MatrixMode(MatrixMode.Modelview);
+			GL.LoadIdentity();
+            GL.LoadMatrix(Matrix.ToFloatArray(worldView));
         }
+		
+		public static void SetBlendStates(BlendState state)
+		{
+			// Set blending mode
+			BlendEquationMode blendMode = state.ColorBlendFunction.GetBlendEquationMode();
+			GL.BlendEquation (blendMode);
+			
+			// Set blending function
+			BlendingFactorSrc bfs = state.ColorSourceBlend.GetBlendFactorSrc();
+			BlendingFactorDest bfd = state.ColorDestinationBlend.GetBlendFactorDest();
+			GL.BlendFunc (bfs, bfd);
 
-        public static void Cull(All11 cullMode)
+			GL.Enable (EnableCap.Blend);
+		}
+		
+		public static void FillMode (RasterizerState state)
+		{
+			switch (state.FillMode) {
+			case Microsoft.Xna.Framework.Graphics.FillMode.Solid:
+				GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
+				break;
+			case Microsoft.Xna.Framework.Graphics.FillMode.WireFrame:
+				GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
+				break;
+			}
+		}
+
+		public static void Cull(RasterizerState state)
         {
-            if (_cull != cullMode)
-            {
-                _cull = cullMode;
-                GL11.Enable(_cull);
-            }
-        }
+			switch (state.CullMode) {
+			case CullMode.None:
+				GL.Disable(EnableCap.CullFace);
+				break;
+			case CullMode.CullClockwiseFace:
+				GL.Enable(EnableCap.CullFace);
+				// set it to Back
+				GL.CullFace(CullFaceMode.Back);
+				// Set our direction
+				// I know this seems weird and maybe it is but based
+				//  on the samples these seem to be reversed in OpenGL and DirectX
+				GL.FrontFace(FrontFaceDirection.Ccw);
+				break;
+			case CullMode.CullCounterClockwiseFace:
+				GL.Enable(EnableCap.CullFace);
+				// set it to Back
+				GL.CullFace(CullFaceMode.Back);
+				// I know this seems weird and maybe it is but based
+				//  on the samples these seem to be reversed in OpenGL and DirectX
+				GL.FrontFace(FrontFaceDirection.Cw);
+				break;
+			}
+		}
 
-        public static void BlendFunc(All11 source, All11 dest)
+		public static void SetRasterizerStates (RasterizerState state) {
+			Cull(state);
+			FillMode(state);
+		}
+
+		internal static void SetDepthStencilState ( DepthStencilState state )
+		{
+			if (state.DepthBufferEnable) {
+				// enable Depth Buffer
+				GL.Enable( EnableCap.DepthTest);
+			}
+			else {
+				GL.Disable (EnableCap.DepthTest);
+			}
+
+
+			if (state.StencilEnable) {
+
+				// enable Stencil
+				GL.Enable( EnableCap.StencilTest);
+
+				// Set color mask - not needed
+				//GL.ColorMask(false, false, false, false); //Disable drawing colors to the screen
+				// set function
+				StencilFunction func = StencilFunction.Always;
+				switch (state.StencilFunction) {
+				case CompareFunction.Always:
+					func = StencilFunction.Always;
+					break;
+				case CompareFunction.Equal:
+					func = StencilFunction.Equal;
+					break;
+				case CompareFunction.Greater:
+					func = StencilFunction.Greater;
+					break;
+				case CompareFunction.GreaterEqual:
+					func = StencilFunction.Gequal;
+					break;
+				case CompareFunction.Less:
+					func = StencilFunction.Less;
+					break;
+				case CompareFunction.LessEqual:
+					func = StencilFunction.Lequal;
+					break;
+				case CompareFunction.Never:
+					func = StencilFunction.Never;
+					break;
+				case CompareFunction.NotEqual:
+					func = StencilFunction.Notequal;
+					break;
+				}
+
+				GL.StencilFunc (func, state.ReferenceStencil, state.StencilMask);
+
+				GL.StencilOp (GetStencilOp(state.StencilFail) , GetStencilOp (state.StencilDepthBufferFail)
+					, GetStencilOp ( state.StencilPass));
+			}
+			else {
+				// Set color mask - not needed
+				//GL.ColorMask(true, true, true, true); // Enable drawing colors to the screen
+				GL.Disable (EnableCap.StencilTest);
+			}
+
+		}
+
+		static StencilOp GetStencilOp (StencilOperation operation) {
+
+			switch (operation) {
+			case StencilOperation.Keep:
+				return StencilOp.Keep;
+			case StencilOperation.Decrement:
+				return StencilOp.Decr;
+			case StencilOperation.DecrementSaturation:
+				return StencilOp.DecrWrap;
+			case StencilOperation.Increment:
+				return StencilOp.Incr;
+			case StencilOperation.IncrementSaturation:
+				return StencilOp.IncrWrap;
+			case StencilOperation.Invert:
+				return StencilOp.Invert;
+			case StencilOperation.Replace:
+				return StencilOp.Replace;
+			case StencilOperation.Zero:
+				return StencilOp.Zero;
+			default:
+				return StencilOp.Keep;
+			}
+		}		
+
+        public static void BlendFunc(BlendingFactorSrc source, BlendingFactorDest dest)
         {
             if (source != _blendFuncSource && dest != _blendFuncDest)
             {
                 source = _blendFuncSource;
                 dest = _blendFuncDest;
 
-                GL11.BlendFunc(source, dest);
+                GL.BlendFunc(source, dest);
             }
         }
     }

@@ -150,32 +150,6 @@ namespace Microsoft.Xna.Framework.Graphics
 				return temp;
 			} 
 		}		
-
-//		public void Clear (Color color)
-//		{
-//			Vector4 vector = color.ToVector4 ();
-//			// The following was not working with Color.Transparent
-//			// Once we get some regression tests take the following out			
-//			//GL.ClearColor (vector.X, vector.Y, vector.Z, 1.0f);
-//			GL.ClearColor (vector.X, vector.Y, vector.Z, vector.W);
-//			GL.Clear (ClearBufferMask.ColorBufferBit);
-//		}
-//
-//		public void Clear (ClearOptions options, Color color, float depth, int stencil)
-//		{
-//			Clear (options, color.ToVector4 (), depth, stencil);
-//		}
-//
-//		public void Clear (ClearOptions options, Vector4 color, float depth, int stencil)
-//		{
-//			// The following was not working with Color.Transparent
-//			// Once we get some regression tests take the following out
-//			//GL.ClearColor (color.X, color.Y, color.Z, 1.0f);
-//			GL.ClearColor (color.X, color.Y, color.Z, color.W);
-//			GL.ClearDepth (depth);
-//			GL.ClearStencil (stencil);
-//			GL.Clear ((ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit));
-//		}
 		
 		public void Clear (Color color)
 		{
@@ -313,52 +287,6 @@ namespace Microsoft.Xna.Framework.Graphics
 			}
 			set {
 				_scissorRectangle = value;
-
-				switch (this.PresentationParameters.DisplayOrientation) 
-				{
-					case DisplayOrientation.Portrait :
-					{
-						_scissorRectangle.Y = _viewport.Height - _scissorRectangle.Y - _scissorRectangle.Height;
-						break;
-					}
-
-					case DisplayOrientation.LandscapeLeft :
-					{		
-						var x = _scissorRectangle.X;
-						_scissorRectangle.X = _viewport.Width - _scissorRectangle.Height - _scissorRectangle.Y;
-						_scissorRectangle.Y = _viewport.Height - _scissorRectangle.Width - x;
-					
-						// Swap Width and Height
-						var w = _scissorRectangle.Width;
-						_scissorRectangle.Width = _scissorRectangle.Height;
-						_scissorRectangle.Height = w;	
-						break;
-					}
-
-					case DisplayOrientation.LandscapeRight :
-					{			
-						var x = _scissorRectangle.X;
-						_scissorRectangle.X = _scissorRectangle.Y;
-						_scissorRectangle.Y = x;
-						var w = _scissorRectangle.Width;
-						_scissorRectangle.Width = _scissorRectangle.Height;
-						_scissorRectangle.Height = w;
-						break;
-					}
-					
-					case DisplayOrientation.PortraitUpsideDown :
-					{
-						_scissorRectangle.Y = _scissorRectangle.X;
-						_scissorRectangle.X = _viewport.Width - _scissorRectangle.X - _scissorRectangle.Width;
-						break;
-					}
-					
-					case DisplayOrientation.Default :
-					{
-						_scissorRectangle.Y = _viewport.Height - _scissorRectangle.Y - _scissorRectangle.Height;
-						break;
-					}
-				}
 			}
 		}
 		
@@ -383,6 +311,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			// rendertarget to the new one being passed if it is not null
 			if (renderTarget == null || currentRenderTargets != null)
 			{				
+				GL.DrawBuffer(DrawBufferMode.ColorAttachment0);
 				// Detach the render buffers
 				GL.FramebufferRenderbuffer(FramebufferTarget.FramebufferExt, FramebufferAttachment.DepthAttachmentExt,
 						RenderbufferTarget.RenderbufferExt, 0);
@@ -391,14 +320,17 @@ namespace Microsoft.Xna.Framework.Graphics
 				// delete the FBO
 				GL.DeleteFramebuffers(frameBufferIDs.Length, frameBufferIDs);
 				// Set the frame buffer back to the system window buffer
-				GL.BindFramebuffer(FramebufferTarget.FramebufferExt, originalFbo);
-				
-				// We need to reset our GraphicsDevice viewport back to what it was
-				// before rendering.
-				Viewport = savedViewport;
+				GL.BindFramebuffer(FramebufferTarget.FramebufferExt, 0);
 
 				if (renderTarget == null)
+				{
+					_viewport.X = 0;
+					_viewport.Y = 0;
+					_viewport.Width = PresentationParameters.BackBufferWidth;
+					_viewport.Height = PresentationParameters.BackBufferHeight;
+
 					currentRenderTargets = null;
+				}
 				else {
 					SetRenderTargets(new RenderTargetBinding(renderTarget));
 				}
@@ -411,7 +343,6 @@ namespace Microsoft.Xna.Framework.Graphics
 		
 		int[] frameBufferIDs;
 		int[] renderBufferIDs;
-		int originalFbo = 0; // -1 for when GL.GetInteger works
 			
 		// TODO: We need to come up with a state save and restore of the GraphicsDevice
 		//  This would probably work with a Stack that allows pushing and popping of the current
@@ -459,9 +390,9 @@ namespace Microsoft.Xna.Framework.Graphics
 							break;
 						case DepthFormat.Depth24Stencil8:
 							GL.RenderbufferStorage(RenderbufferTarget.RenderbufferExt, RenderbufferStorage.Depth24Stencil8,
-							target.Width, target.Height);							
+								target.Width, target.Height);							
 							GL.FramebufferRenderbuffer(FramebufferTarget.FramebufferExt, FramebufferAttachment.StencilAttachmentExt,
-							RenderbufferTarget.RenderbufferExt, renderBufferIDs[i]);
+								RenderbufferTarget.RenderbufferExt, renderBufferIDs[i]);
 							clearOptions = clearOptions | ClearOptions.Stencil;
 							break;
 						default :
@@ -482,7 +413,10 @@ namespace Microsoft.Xna.Framework.Graphics
 					GL.FramebufferRenderbuffer(FramebufferTarget.FramebufferExt, FramebufferAttachment.DepthAttachmentExt,
 						RenderbufferTarget.RenderbufferExt, renderBufferIDs[i]);
 					
-					GL.BindRenderbuffer(RenderbufferTarget.RenderbufferExt, originalFbo);
+					if (target.RenderTargetUsage == RenderTargetUsage.DiscardContents)
+						Clear (clearOptions, Color.Transparent, 0, 0);
+					
+					GL.BindRenderbuffer(RenderbufferTarget.RenderbufferExt, 0);
 											
 				}
 				
@@ -491,15 +425,6 @@ namespace Microsoft.Xna.Framework.Graphics
 				if (status != FramebufferErrorCode.FramebufferComplete)
 					throw new Exception("Error creating framebuffer: " + status);
 				
-				// We need to start saving off the ViewPort and setting the current ViewPort to
-				// the width and height of the texture.  Then when we pop off the rendertarget
-				// it needs to be reset.  This causes drawing problems if we do not set the viewport.
-				// Makes sense once you follow the flow (hits head on desk)
-				// For an example of this take a look at NetRumble's sample for the BloomPostprocess
-
-				// Save off the current viewport to be reset later
-				savedViewport = Viewport;
-
 				// Create a new Viewport
 				Viewport renderTargetViewPort = new Viewport();
 
@@ -523,6 +448,9 @@ namespace Microsoft.Xna.Framework.Graphics
 		
 		public void ResolveBackBuffer (ResolveTexture2D resolveTexture)
 		{
+			GL.BindTexture(TextureTarget.Texture2D, resolveTexture.ID);
+			GL.CopyTexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, 0, 0,
+				PresentationParameters.BackBufferWidth, PresentationParameters.BackBufferHeight);
 		}
 
 		public BeginMode PrimitiveTypeGL11 (PrimitiveType primitiveType)
@@ -544,17 +472,41 @@ namespace Microsoft.Xna.Framework.Graphics
 		public void SetVertexBuffer (VertexBuffer vertexBuffer)
 		{
 			_vertexBuffer = vertexBuffer;
-			GL.BindBuffer (BufferTarget.ArrayBuffer, vertexBuffer._bufferStore);
+			//GL.BindBuffer (BufferTarget.ArrayBuffer, vertexBuffer._bufferStore);
 		}
 
 		private void SetIndexBuffer (IndexBuffer indexBuffer)
 		{
 			_indexBuffer = indexBuffer;
-			GL.BindBuffer (BufferTarget.ElementArrayBuffer, indexBuffer._bufferStore);
+			//GL.BindBuffer (BufferTarget.ElementArrayBuffer, indexBuffer._bufferStore);
 		}
 
 		public IndexBuffer Indices { set { SetIndexBuffer (value); } }
-
+		
+		internal void SetGraphicsStates()
+		{
+			GL.PushMatrix();
+			
+			GLStateManager.SetRasterizerStates(RasterizerState);
+			GLStateManager.SetBlendStates(BlendState);
+			GLStateManager.SetDepthStencilState(DepthStencilState);
+		}
+		
+		bool resetVertexStates = false;
+		internal void UnsetGraphicsStates()
+		{
+			GL.UseProgram(0);
+			
+			if (resetVertexStates) {
+				GLStateManager.VertexArray(false);
+				GLStateManager.ColorArray(false);
+				GLStateManager.NormalArray(false);
+				GLStateManager.TextureCoordArray(false);
+				resetVertexStates = false;
+			}
+			GL.PopMatrix();
+		}
+		
 		public void DrawIndexedPrimitives (PrimitiveType primitiveType, int baseVertex, int minVertexIndex, int numbVertices, int startIndex, int primitiveCount)
 		{
 			if (minVertexIndex > 0 || baseVertex > 0)

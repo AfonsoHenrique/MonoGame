@@ -15,6 +15,7 @@ namespace Microsoft.Xna.Framework.Graphics
 		DepthStencilState _depthStencilState; 
 		RasterizerState _rasterizerState;		
 		Effect _effect;
+		SpriteEffect spriteEffect;
 		Matrix _matrix;
 		Rectangle tempRect = new Rectangle (0,0,0,0);
 		Vector2 texCoordTL = new Vector2 (0,0);
@@ -27,7 +28,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			}	
 
 			this.graphicsDevice = graphicsDevice;
-			//spriteEffect = new SpriteEffect (this.graphicsDevice);	
+			spriteEffect = new SpriteEffect (this.graphicsDevice);	
 			_batcher = new SpriteBatcher ();
 		}
 
@@ -46,8 +47,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			_depthStencilState = depthStencilState ?? DepthStencilState.None;
 			_rasterizerState = rasterizerState ?? RasterizerState.CullCounterClockwise;
 
-			if (effect != null)
-				_effect = effect;
+			_effect = effect == null ? spriteEffect : effect;
 
 			_matrix = transformMatrix;
 		}
