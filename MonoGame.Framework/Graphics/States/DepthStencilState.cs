@@ -22,10 +22,22 @@ namespace Microsoft.Xna.Framework.Graphics
 
 		public DepthStencilState ()
 		{
+			CounterClockwiseStencilDepthBufferFail = StencilOperation.Keep;
+			CounterClockwiseStencilFail = StencilOperation.Keep;
+			CounterClockwiseStencilFunction = CompareFunction.Always;
+			CounterClockwiseStencilPass = StencilOperation.Keep;
             DepthBufferEnable = true;
+            DepthBufferFunction = CompareFunction.LessEqual;
             DepthBufferWriteEnable = true;
+			ReferenceStencil = 0;
+			StencilDepthBufferFail = StencilOperation.Keep;
+			StencilEnable = false;
+			StencilFail = StencilOperation.Keep;
+			StencilFunction = CompareFunction.Always;
 			StencilMask = Int32.MaxValue;
+			StencilPass = StencilOperation.Keep;
 			StencilWriteMask = Int32.MaxValue;
+			TwoSidedStencilMode = false;
 		}
 		
 		static DepthStencilState defaultState;
