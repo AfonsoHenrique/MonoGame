@@ -58,12 +58,13 @@ namespace Microsoft.Xna.Framework.Graphics
 		public ColorWriteChannels ColorWriteChannels3 { get; set; }
 		public int MultiSampleMask { get; set; }
 		
-		static BlendState additiveState;
+		//static BlendState additiveState;
 		
 		public static readonly BlendState Additive;
 		public static readonly BlendState AlphaBlend;
 		public static readonly BlendState NonPremultiplied;
 		public static readonly BlendState Opaque;
+
 		
 		static BlendState () {
 			Additive = new BlendState () {
@@ -74,8 +75,8 @@ namespace Microsoft.Xna.Framework.Graphics
 			};
 			
 			AlphaBlend = new BlendState () {
-				ColorSourceBlend = Blend.One,
-				AlphaSourceBlend = Blend.One,
+				ColorSourceBlend = Blend.SourceAlpha, //Blend.One,
+				AlphaSourceBlend = Blend.SourceAlpha, //Blend.One,
 				ColorDestinationBlend = Blend.InverseSourceAlpha,
 				AlphaDestinationBlend = Blend.InverseSourceAlpha
 			};
