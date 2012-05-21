@@ -372,7 +372,7 @@ namespace Microsoft.Xna.Framework.Graphics
 			case Blend.InverseSourceAlpha:
 				return BlendingFactorDest.OneMinusSrcAlpha;
 			case Blend.InverseSourceColor:
-				return BlendingFactorDest.OneMinusConstantColor;
+				return BlendingFactorDest.OneMinusSrcColor;
 			case Blend.One:
 				return BlendingFactorDest.One;
 			case Blend.SourceAlpha:
@@ -380,7 +380,7 @@ namespace Microsoft.Xna.Framework.Graphics
 //			case Blend.SourceAlphaSaturation:
 //				return BlendingFactorDest.SrcAlphaSaturate;
 			case Blend.SourceColor:
-				return BlendingFactorDest.ConstantColor;
+				return BlendingFactorDest.SrcColor;
 			case Blend.Zero:
 				return BlendingFactorDest.Zero;
 			default:
