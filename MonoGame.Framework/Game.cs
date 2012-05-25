@@ -549,7 +549,7 @@ namespace Microsoft.Xna.Framework
 
             viewport.X = 0;
             viewport.Y = 0;
-#if WINDOWS || LINUX
+#if WINDOWS
             viewport.Width = manager.PreferredBackBufferWidth;// GraphicsDevice.PresentationParameters.BackBufferWidth;
             viewport.Height = manager.PreferredBackBufferHeight;// GraphicsDevice.PresentationParameters.BackBufferHeight;
 #else

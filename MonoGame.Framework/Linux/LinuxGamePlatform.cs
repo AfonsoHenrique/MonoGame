@@ -70,6 +70,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace Microsoft.Xna.Framework
 {
@@ -160,6 +161,15 @@ namespace Microsoft.Xna.Framework
             // we only change window bounds if we are not fullscreen
             if (!graphicsDeviceManager.IsFullScreen)
                 Window.ChangeClientBounds(bounds);
+			
+			// Now we set our Presentation Parameters
+			var device = graphicsDeviceManager.GraphicsDevice;
+			if (device != null)
+			{
+				PresentationParameters parms = device.PresentationParameters;
+				parms.BackBufferHeight = (int)bounds.Height;
+				parms.BackBufferWidth = (int)bounds.Width;
+			}
 
             IsActive = wasActive;
         }
