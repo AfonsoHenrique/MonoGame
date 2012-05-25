@@ -126,6 +126,9 @@ namespace Microsoft.Xna.Framework
 			var h = DeviceReset;
 			if (h != null)
 				h (this, e);
+			
+			if (_graphicsDevice != null)
+				_graphicsDevice.Reset();
 		}
 
 		internal void OnDeviceCreated (EventArgs e)

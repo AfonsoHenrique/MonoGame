@@ -196,8 +196,15 @@ namespace Microsoft.Xna.Framework
 		
         private void OnResize(object sender, EventArgs e)
         {
+			var manager = Game.Services.GetService(typeof(IGraphicsDeviceManager)) as GraphicsDeviceManager;
+			if (Game.Initialized)
+				manager.OnDeviceResetting(EventArgs.Empty);
+
             Game.GraphicsDevice.SizeChanged(window.ClientRectangle.Width, window.ClientRectangle.Height);
             OnClientSizeChanged();
+
+			if (Game.Initialized)
+				manager.OnDeviceReset(EventArgs.Empty);
         }
 
         private void OnRenderFrame(object sender, FrameEventArgs e)
