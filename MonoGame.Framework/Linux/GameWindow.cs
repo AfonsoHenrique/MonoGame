@@ -60,7 +60,7 @@ namespace Microsoft.Xna.Framework
 		private bool _transitiveAllowUserResizing;
         private DisplayOrientation _currentOrientation;
         private OpenTK.GameWindow window;
-		protected Game game;
+
 		private List<Microsoft.Xna.Framework.Input.Keys> keys;
 				
 		// we need this variables to make changes beetween threads
