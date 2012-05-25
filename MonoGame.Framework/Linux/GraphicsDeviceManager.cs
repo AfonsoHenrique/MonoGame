@@ -76,15 +76,17 @@ namespace Microsoft.Xna.Framework
 
 		public void CreateDevice ()
 		{
-			_graphicsDevice = new GraphicsDevice ();
-			_graphicsDevice.PresentationParameters = new PresentationParameters ();
+			if (_graphicsDevice == null) {
+				_graphicsDevice = new GraphicsDevice ();
+				_graphicsDevice.PresentationParameters = new PresentationParameters ();
 
-			_preferredBackBufferHeight = _graphicsDevice.PresentationParameters.BackBufferHeight;
-			_preferredBackBufferWidth = _graphicsDevice.PresentationParameters.BackBufferWidth;
+				_preferredBackBufferHeight = _graphicsDevice.PresentationParameters.BackBufferHeight;
+				_preferredBackBufferWidth = _graphicsDevice.PresentationParameters.BackBufferWidth;
+
+				Initialize();
 			
-			Initialize();
-			
-			OnDeviceCreated(EventArgs.Empty);
+				OnDeviceCreated(EventArgs.Empty);
+			}
 		}
 
 		public bool BeginDraw ()
