@@ -93,7 +93,6 @@ namespace Microsoft.Xna.Framework
             if (!Window.Window.IsExiting)
             {
                 Net.NetworkSession.Exit();
-                Audio.Sound.DisposeSoundServices();
                 Window.Window.Exit();
             }
         }

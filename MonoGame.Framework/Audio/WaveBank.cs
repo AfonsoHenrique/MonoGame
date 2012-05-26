@@ -27,435 +27,313 @@ SOFTWARE.
 
 using System;
 using System.IO;
+using System.Diagnostics;
+
 namespace Microsoft.Xna.Framework.Audio
 {
-    public class WaveBank : IDisposable
+    public class WaveBank
     {
-        internal SoundEffectInstance[] sounds;
-        internal string BankName;
+        internal SoundData[] mSounds;
+        internal string BankName = "";
+        private const int OWB_VERSION = 5;
+
+        private int mSoundReadIdx;
+        private long[] mSizes = null;
+        private FileStream mFS;
+        private bool mIsLoaded = false;
+        public bool IsLoaded { get { return mIsLoaded; } }
 		internal AudioEngine mAudioEngine;
-
-        struct Segment
-        {
-            public int Offset;
-            public int Length;
-        }
-
-        struct WaveBankEntry
-        {
-            public int Format;
-            public Segment PlayRegion;
-            public Segment LoopRegion;
-            public int FlagsAndDuration;
-        }
-
-        struct WaveBankHeader
-        {
-            public int Version;
-            public Segment[] Segments;
-        }
-
-        struct WaveBankData
-        {
-            public int    Flags;                                // Bank flags
-            public int    EntryCount;                           // Number of entries in the bank
-            public string BankName;                             // Bank friendly name
-            public int    EntryMetaDataElementSize;             // Size of each entry meta-data element, in bytes
-            public int    EntryNameElementSize;                 // Size of each entry name element, in bytes
-            public int    Alignment;                            // Entry alignment, in bytes
-            public int    CompactFormat;                        // Format data for compact bank
-            public int    BuildTime;                            // Build timestamp
-        }
-        
-        private const int Flag_EntryNames = 0x00010000; // Bank includes entry names
-        private const int Flag_Compact = 0x00020000; // Bank uses compact format
-        private const int Flag_SyncDisabled = 0x00040000; // Bank is disabled for audition sync
-        private const int Flag_SeekTables = 0x00080000; // Bank includes seek tables.
-        private const int Flag_Mask = 0x000F0000;
-        
-        private const int MiniFormatTag_PCM = 0x0;
-        private const int MiniFormatTag_XMA = 0x1;
-        private const int MiniFormatTag_ADPCM = 0x2;
-        private const int MiniForamtTag_WMA = 0x3;
-        
-        public WaveBank(AudioEngine audioEngine, string nonStreamingWaveBankFilename)
-        {
-            nonStreamingWaveBankFilename = nonStreamingWaveBankFilename.Replace('\\',Path.DirectorySeparatorChar);
-			int start = nonStreamingWaveBankFilename.LastIndexOf(Path.DirectorySeparatorChar) + 1;
+	
+		public WaveBank(AudioEngine audioEngine, string nonStreamingWaveBankFilename)
+		{
+#if !NO_FMOD
+            int start = nonStreamingWaveBankFilename.LastIndexOf('/') + 1;
             BankName = nonStreamingWaveBankFilename.Substring(start, nonStreamingWaveBankFilename.Length - start - 4);
 
-            BinaryReader reader = new BinaryReader(new FileStream(nonStreamingWaveBankFilename, FileMode.Open));
-            int version = reader.ReadInt32();
-			if (version == 5) {
-				// OWB (ogg wave bank)
-				ParseOWB(reader);
-			} else {
-				ParseXWB(reader);
-			}
-			audioEngine.WaveBanks.Add (BankName, this);
+            audioEngine.Wavebanks.Add(this);
 			mAudioEngine = audioEngine;
-		}
-		
-		private void ParseOWB(BinaryReader reader)
-		{
-		}
-		
-		private void ParseXWB(BinaryReader reader)
-		{
-            //XWB PARSING
-            //Adapted from MonoXNA
-            //Originally adaped from Luigi Auriemma's unxwb
-			
-            WaveBankHeader wavebankheader;
-            WaveBankData wavebankdata;
-            WaveBankEntry wavebankentry;
 
-            wavebankdata.EntryNameElementSize = 0;
-            wavebankdata.CompactFormat = 0;
-            wavebankdata.Alignment = 0;
+            mFS = new FileStream( nonStreamingWaveBankFilename, FileMode.Open, FileAccess.Read );
 
-            wavebankentry.Format = 0;
-            wavebankentry.PlayRegion.Length = 0;
-            wavebankentry.PlayRegion.Offset = 0;
-
-            int wavebank_offset = 0;
-
-            wavebankheader.Version = reader.ReadInt32();
-
-            int last_segment = 4;
-            //if (wavebankheader.Version == 1) goto WAVEBANKDATA;
-            if (wavebankheader.Version <= 3) last_segment = 3;
-            if (wavebankheader.Version >= 42) reader.ReadInt32();    // skip HeaderVersion
-
-            wavebankheader.Segments = new Segment[5];
-
-            for (int i = 0; i <= last_segment; i++)
+            byte[] buf = new byte[8];
+            mFS.BeginRead(buf, 0, buf.Length, delegate(IAsyncResult result)
             {
-                wavebankheader.Segments[i].Offset = reader.ReadInt32();
-                wavebankheader.Segments[i].Length = reader.ReadInt32();
-            }
-
-            reader.BaseStream.Seek(wavebankheader.Segments[0].Offset, SeekOrigin.Begin);
-
-            //WAVEBANKDATA:
-
-            wavebankdata.Flags = reader.ReadInt32();
-            wavebankdata.EntryCount = reader.ReadInt32();
-
-            if ((wavebankheader.Version == 2) || (wavebankheader.Version == 3))
-            {
-                wavebankdata.BankName = System.Text.Encoding.UTF8.GetString(reader.ReadBytes(16)).Replace("\0", "");
-            }
-            else
-            {
-                wavebankdata.BankName = System.Text.Encoding.UTF8.GetString(reader.ReadBytes(64)).Replace("\0", "");
-            }
-
-            BankName = wavebankdata.BankName;
-
-            if (wavebankheader.Version == 1)
-            {
-                //wavebank_offset = (int)ftell(fd) - file_offset;
-                wavebankdata.EntryMetaDataElementSize = 20;
-            }
-            else
-            {
-                wavebankdata.EntryMetaDataElementSize = reader.ReadInt32();
-                wavebankdata.EntryNameElementSize = reader.ReadInt32();
-                wavebankdata.Alignment = reader.ReadInt32();
-                wavebank_offset = wavebankheader.Segments[1].Offset; //METADATASEGMENT
-            }
-
-            int compact_format;
-
-            if ((wavebankdata.Flags & Flag_Compact) != 0)
-            {
-                compact_format = reader.ReadInt32();
-            }
-
-            int playregion_offset = wavebankheader.Segments[last_segment].Offset;
-            if (playregion_offset == 0)
-            {
-                playregion_offset =
-                    wavebank_offset +
-                    (wavebankdata.EntryCount * wavebankdata.EntryMetaDataElementSize);
-            }
-            
-            int segidx_entry_name = 2;
-            if (wavebankheader.Version >= 42) segidx_entry_name = 3;
-            
-            int waveentry_offset = wavebankheader.Segments[segidx_entry_name].Offset;
-            if ((wavebankheader.Segments[segidx_entry_name].Offset != 0) &&
-                (wavebankheader.Segments[segidx_entry_name].Length != 0))
-            {
-                if (wavebankdata.EntryNameElementSize == -1) wavebankdata.EntryNameElementSize = 0;
-                byte[] entry_name = new byte[wavebankdata.EntryNameElementSize + 1];
-                entry_name[wavebankdata.EntryNameElementSize] = 0;
-            }
-
-            sounds = new SoundEffectInstance[wavebankdata.EntryCount];
-
-            for (int current_entry = 0; current_entry < wavebankdata.EntryCount; current_entry++)
-            {
-                reader.BaseStream.Seek(wavebank_offset, SeekOrigin.Begin);
-                //SHOWFILEOFF;
-
-                //memset(&wavebankentry, 0, sizeof(wavebankentry));
-
-
-                if ((wavebankdata.Flags & Flag_Compact) != 0)
+                int bytesRead;
+                try
                 {
-                    int len = reader.ReadInt32();
-                    wavebankentry.Format = wavebankdata.CompactFormat;
-                    wavebankentry.PlayRegion.Offset = (len & ((1 << 21) - 1)) * wavebankdata.Alignment;
-                    wavebankentry.PlayRegion.Length = (len >> 21) & ((1 << 11) - 1);
+                    bytesRead = mFS.EndRead(result);
+                }
+                catch (System.IO.FileNotFoundException)
+                {
+                    mFS.Close();
+                    mFS = null;
+                    return;
+                }
+                Debug.Assert(bytesRead == 8, "Didn't read 8 bytes");
+                System.IO.BinaryReader reader = new System.IO.BinaryReader(
+                    new System.IO.MemoryStream(buf, false));
+                int version = reader.ReadInt32();
+                // anything else would be uncivilized -- run oggAct to correct this error
+                if (version != OWB_VERSION)
+                {
+                    mFS.Close();
+                    mFS = null;
+                    return;
+                }
+                Debug.Assert(version == OWB_VERSION, "rebuild your wave bank with oggact");
+                int count = reader.ReadInt32();
 
-                    // workaround because I don't know how to handke the deviation length
-
-                    reader.BaseStream.Seek(wavebank_offset + wavebankdata.EntryMetaDataElementSize, SeekOrigin.Begin);
-                    //MYFSEEK(wavebank_offset + wavebankdata.dwEntryMetaDataElementSize); // seek to the next
-                    if (current_entry == (wavebankdata.EntryCount - 1))
-                    {              // the last track
-                        len = wavebankheader.Segments[last_segment].Length;
-                    }
-                    else
+                int sizeHeaderLength = 8 * count;
+                byte[] buf2 = new byte[sizeHeaderLength];
+                mFS.BeginRead(buf2, 0, buf2.Length, delegate(IAsyncResult result2)
+                {
+                    int bytesRead2 = mFS.EndRead(result2);
+                    Debug.Assert(bytesRead2 == buf2.Length,
+                        String.Format("{0} != {1}", buf2.Length, bytesRead2));
+                    System.IO.BinaryReader reader2 = new System.IO.BinaryReader(
+                        new System.IO.MemoryStream(buf2, false));
+                    mSizes = new long[count];
+                    for (int i = 0; i < count; i++)
                     {
-                        len = ((reader.ReadInt32() & ((1 << 21) - 1)) * wavebankdata.Alignment);
-                    }
-                    wavebankentry.PlayRegion.Length =
-                        len -                               // next offset
-                        wavebankentry.PlayRegion.Offset;  // current offset
-                    goto wavebank_handle;
-                }
-
-                if (wavebankheader.Version == 1)
-                {
-                    wavebankentry.Format = reader.ReadInt32();
-                    wavebankentry.PlayRegion.Offset = reader.ReadInt32();
-                    wavebankentry.PlayRegion.Length = reader.ReadInt32();
-                    wavebankentry.LoopRegion.Offset = reader.ReadInt32();
-                    wavebankentry.LoopRegion.Length = reader.ReadInt32();
-                }
-                else
-                {
-                    if (wavebankdata.EntryMetaDataElementSize >= 4) wavebankentry.FlagsAndDuration = reader.ReadInt32();
-                    if (wavebankdata.EntryMetaDataElementSize >= 8) wavebankentry.Format = reader.ReadInt32();
-                    if (wavebankdata.EntryMetaDataElementSize >= 12) wavebankentry.PlayRegion.Offset = reader.ReadInt32();
-                    if (wavebankdata.EntryMetaDataElementSize >= 16) wavebankentry.PlayRegion.Length = reader.ReadInt32();
-                    if (wavebankdata.EntryMetaDataElementSize >= 20) wavebankentry.LoopRegion.Offset = reader.ReadInt32();
-                    if (wavebankdata.EntryMetaDataElementSize >= 24) wavebankentry.LoopRegion.Length = reader.ReadInt32();
-                }
-
-                if (wavebankdata.EntryMetaDataElementSize < 24)
-                {                              // work-around
-                    if (wavebankentry.PlayRegion.Length != 0)
-                    {
-                        wavebankentry.PlayRegion.Length = wavebankheader.Segments[last_segment].Length;
+                        mSizes[i] = reader2.ReadInt64();
                     }
 
-                }// else if(wavebankdata.EntryMetaDataElementSize > sizeof(WaveBankEntry)) {    // skip unused fields
-            //   MYFSEEK(wavebank_offset + wavebankdata.EntryMetaDataElementSize);
-            //}
-
-                wavebank_handle:
-                wavebank_offset += wavebankdata.EntryMetaDataElementSize;
-                wavebankentry.PlayRegion.Offset += playregion_offset;
-                
-                // Parse WAVEBANKMINIWAVEFORMAT
-                
-                int codec;
-                int chans;
-                int rate;
-                int align;
-                int bits;
-
-                if (wavebankheader.Version == 1)
-                {         // I'm not 100% sure if the following is correct
-                    // version 1:
-                    // 1 00000000 000101011000100010 0 001 0
-                    // | |         |                 | |   |
-                    // | |         |                 | |   wFormatTag
-                    // | |         |                 | nChannels
-                    // | |         |                 ???
-                    // | |         nSamplesPerSec
-                    // | wBlockAlign
-                    // wBitsPerSample
-
-                    codec = (wavebankentry.Format) & ((1 << 1) - 1);
-                    chans = (wavebankentry.Format >> (1)) & ((1 << 3) - 1);
-                    rate = (wavebankentry.Format >> (1 + 3 + 1)) & ((1 << 18) - 1);
-                    align = (wavebankentry.Format >> (1 + 3 + 1 + 18)) & ((1 << 8) - 1);
-                    bits = (wavebankentry.Format >> (1 + 3 + 1 + 18 + 8)) & ((1 << 1) - 1);
-
-                    /*} else if(wavebankheader.dwVersion == 23) { // I'm not 100% sure if the following is correct
-                        // version 23:
-                        // 1000000000 001011101110000000 001 1
-                        // | |        |                  |   |
-                        // | |        |                  |   ???
-                        // | |        |                  nChannels?
-                        // | |        nSamplesPerSec
-                        // | ???
-                        // !!!UNKNOWN FORMAT!!!
-
-                        //codec = -1;
-                        //chans = (wavebankentry.Format >>  1) & ((1 <<  3) - 1);
-                        //rate  = (wavebankentry.Format >>  4) & ((1 << 18) - 1);
-                        //bits  = (wavebankentry.Format >> 31) & ((1 <<  1) - 1);
-                        codec = (wavebankentry.Format                    ) & ((1 <<  1) - 1);
-                        chans = (wavebankentry.Format >> (1)             ) & ((1 <<  3) - 1);
-                        rate  = (wavebankentry.Format >> (1 + 3)         ) & ((1 << 18) - 1);
-                        align = (wavebankentry.Format >> (1 + 3 + 18)    ) & ((1 <<  9) - 1);
-                        bits  = (wavebankentry.Format >> (1 + 3 + 18 + 9)) & ((1 <<  1) - 1); */
-
-                }
-                else
-                {
-                    // 0 00000000 000111110100000000 010 01
-                    // | |        |                  |   |
-                    // | |        |                  |   wFormatTag
-                    // | |        |                  nChannels
-                    // | |        nSamplesPerSec
-                    // | wBlockAlign
-                    // wBitsPerSample
-
-                    codec = (wavebankentry.Format) & ((1 << 2) - 1);
-                    chans = (wavebankentry.Format >> (2)) & ((1 << 3) - 1);
-                    rate = (wavebankentry.Format >> (2 + 3)) & ((1 << 18) - 1);
-                    align = (wavebankentry.Format >> (2 + 3 + 18)) & ((1 << 8) - 1);
-                    bits = (wavebankentry.Format >> (2 + 3 + 18 + 8)) & ((1 << 1) - 1);
-                }
-                
-                reader.BaseStream.Seek(wavebankentry.PlayRegion.Offset, SeekOrigin.Begin);
-                byte[] audiodata = reader.ReadBytes(wavebankentry.PlayRegion.Length);
-                
-                if (codec == MiniFormatTag_PCM) {
-                    
-                    //write PCM data into a wav
-                    
-                    MemoryStream mStream = new MemoryStream(44+audiodata.Length);
-                    BinaryWriter writer = new BinaryWriter(mStream);
-
-                    writer.Write("RIFF".ToCharArray());
-                    writer.Write((int)(36+audiodata.Length));
-                    writer.Write("WAVE".ToCharArray());
-                    
-                    writer.Write("fmt ".ToCharArray());
-                    writer.Write((int)16); //header size
-                    writer.Write((short)1); //format (PCM)
-                    writer.Write((short)chans);
-                    writer.Write((int)rate); //sample rate
-                    writer.Write((int)rate*align); //byte rate
-                    writer.Write((short)align);
-
-					if (bits == 1) 
-					{
-                        writer.Write((short)16);
-                    } 
-					else 
-					{
-                        writer.Write((short)8); //not sure if this is right
-                    } 
-                    
-                    writer.Write("data".ToCharArray());
-                    writer.Write((int)audiodata.Length);
-                    writer.Write(audiodata);
-                                        
-                    writer.Close();
-                    mStream.Close();
-					
-                    sounds[current_entry] = new SoundEffect(mStream.ToArray(), rate, AudioChannels.Mono).CreateInstance();
-					
-                } else if (codec == MiniForamtTag_WMA) { //WMA or xWMA (or XMA2)
-                    byte[] wmaSig = {0x30, 0x26, 0xb2, 0x75, 0x8e, 0x66, 0xcf, 0x11, 0xa6, 0xd9, 0x0, 0xaa, 0x0, 0x62, 0xce, 0x6c};
-                    
-                    bool isWma = true;
-                    for (int i=0; i<wmaSig.Length; i++) {
-                        if (wmaSig[i] != audiodata[i]) {
-                            isWma = false;
-                            break;
-                        }
-                    }
-                    
-                    //Let's support m4a data as well for convenience
-                    byte[][] m4aSigs = new byte[][] {
-                        new byte[] {0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x4D, 0x34, 0x41, 0x20, 0x00, 0x00, 0x02, 0x00},
-                        new byte[] {0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x4D, 0x34, 0x41, 0x20, 0x00, 0x00, 0x00, 0x00}
-                    };
-                    
-                    bool isM4a = false;
-                    for (int i=0; i<m4aSigs.Length; i++) {    
-                        byte[] sig = m4aSigs[i];
-                        bool matches = true;
-                        for (int j=0; j<sig.Length; j++) {
-                            if (sig[j] != audiodata[j]) {
-                                matches = false;
-                                break;
-                            }
-                        }
-                        if (matches) {
-                            isM4a = true;
-                            break;
-                        }
-                    }
-                    
-                    if (isWma || isM4a) {
-                        //WMA data can sometimes be played directly
-                        
-                        //hack - NSSound can't play non-wav from data, we have to give a filename
-                        string filename = Path.GetTempFileName();
-                        if (isWma) {
-                            filename = filename.Replace(".tmp", ".wma");
-                        } else if (isM4a) {
-                            filename = filename.Replace(".tmp", ".m4a");
-                        }
-                        FileStream audioFile = new FileStream(filename, FileMode.Create, FileAccess.ReadWrite);
-                        audioFile.Write(audiodata, 0, audiodata.Length);
-                        audioFile.Close();
-                        
-                        sounds[current_entry] = new SoundEffect(filename).CreateInstance();
-                    } else {
-                        //An xWMA or XMA2 file. Can't be played atm :(
-                        throw new NotImplementedException();
-                    }
-                } else {
-                    throw new NotImplementedException();
-                }
-                
-            }
-        }
+                    mSoundReadIdx = 0;
+                    mSounds = new SoundData[count];
+                    continueReadingSounds();
+                }, null);
+            }, null);
+#endif		
+		}
 		
         public WaveBank(AudioEngine audioEngine, string streamingWaveBankFilename, int offset, short packetSize)
-		{
-            streamingWaveBankFilename = streamingWaveBankFilename.Replace('\\',Path.DirectorySeparatorChar);
-            int start = streamingWaveBankFilename.LastIndexOf(Path.DirectorySeparatorChar) + 1;
+        {
+#if !NO_FMOD
+            int start = streamingWaveBankFilename.LastIndexOf('/') + 1;
             BankName = streamingWaveBankFilename.Substring(start, streamingWaveBankFilename.Length - start - 4);
 
-			BinaryReader reader = new BinaryReader(new FileStream(streamingWaveBankFilename, FileMode.Open));
-            int version = reader.ReadInt32();
-			if (version == 5) {
-				// OWB (ogg wave bank)
-				ParseOWB(reader);
-			} else {
-				ParseXWB(reader);
-			}
-
-			audioEngine.WaveBanks.Add (BankName, this);
+            audioEngine.Wavebanks.Add(this);
 			mAudioEngine = audioEngine;
-		}
 
-		#region IDisposable implementation
-		public void Dispose ()
-		{
-			if (sounds != null) {
-				for (uint i = 0; i < sounds.Length; i++) {
-					sounds[i].Dispose();
-					sounds[i] = null;
-				}
-			}
-			sounds = null;
-			mAudioEngine.WaveBanks.Remove(BankName);
-		}
-		#endregion
+            mFS = new FileStream( streamingWaveBankFilename, FileMode.Open, FileAccess.Read );
+            byte[] buf = new byte[8];
+            mFS.BeginRead(buf, 0, buf.Length, delegate(IAsyncResult result)
+            {
+                int bytesRead;
+                try
+                {
+                    bytesRead = mFS.EndRead(result);
+                }
+                catch (System.IO.FileNotFoundException)
+                {
+                    mFS.Close();
+                    mFS = null;
+                    return;
+                }
+                Debug.Assert(bytesRead == 8, "Didn't read 8 bytes");
+                System.IO.BinaryReader reader = new System.IO.BinaryReader(
+                    new System.IO.MemoryStream(buf, false));
+                int version = reader.ReadInt32();
+                // anything else would be uncivilized -- run oggAct to correct this error
+                if (version != OWB_VERSION)
+                {
+                   	Console.WriteLine("rebuild your wave bank with oggact");
+                    mFS.Close();
+                    mFS = null;
+                    return;
+                }
+                Debug.Assert(version == OWB_VERSION, "rebuild your wave bank with oggact");
+                int count = reader.ReadInt32();
+
+                int sizeHeaderLength = 8 * count;
+                byte[] buf2 = new byte[sizeHeaderLength];
+                mFS.BeginRead(buf2, 0, buf2.Length, delegate(IAsyncResult result2)
+                {
+                    int bytesRead2 = mFS.EndRead(result2);
+                    Debug.Assert(bytesRead2 == buf2.Length,
+                        String.Format("{0} != {1}", buf2.Length, bytesRead2));
+                    System.IO.BinaryReader reader2 = new System.IO.BinaryReader(
+                        new System.IO.MemoryStream(buf2, false));
+                    mSizes = new long[count];
+                    for (int i = 0; i < count; i++)
+                    {
+                        mSizes[i] = reader2.ReadInt64();
+                    }
+
+                    mSoundReadIdx = 0;
+                    mSounds = new SoundData[count];
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        // hard coded constant in Sound.cs, change it if you change the max size
+                        Debug.Assert(mSizes[i] <= 5570141, "mSizes[i] <= 5570141");
+                        mSounds[i] = new SoundData(i, mSizes[i], false);
+                    }
+
+                    mIsLoaded = true;
+                    mFS.Close();
+                    mFS = null;
+                }, null);
+            }, null);
+#endif
+        }
+
+        private void continueReadingSounds()
+        {
+            if (mSoundReadIdx >= mSounds.Length)
+            {
+                mIsLoaded = true;
+                mFS.Close();
+                mFS = null;
+                return;
+            }
+
+            long sz = mSizes[mSoundReadIdx];
+            if (sz > 0)
+            {
+                byte[] bytes = new byte[sz];
+                mFS.BeginRead(bytes, 0, (int)sz, soundReadCallback, bytes);
+            }
+            else
+            {
+                // doesn't happen anymore, if you get this, rebuild your local osb/owbs
+                throw new NotImplementedException();
+            }        
+        }
+
+        private void soundReadCallback(IAsyncResult result)
+        {
+            int bytesRead = mFS.EndRead(result);
+            Debug.Assert(bytesRead == mSizes[mSoundReadIdx], 
+                    String.Format("{0} != {1}", bytesRead, mSoundReadIdx));
+
+            byte[] bytes = (byte[])result.AsyncState;
+
+            mSounds[mSoundReadIdx] = new SoundData(bytes);
+            mSoundReadIdx += 1;
+            continueReadingSounds();
+        }
+
+		/*
+        public WaveBank(AudioEngine audioEngine, string streamingWaveBankFilename, bool streamToPersist)
+        {
+#if !NO_FMOD
+            int start = streamingWaveBankFilename.LastIndexOf('/') + 1;
+            BankName = streamingWaveBankFilename.Substring(start, streamingWaveBankFilename.Length - start - 4);
+
+            audioEngine.Wavebanks.Add(this);
+
+            mFS = new FileStream(streamingWaveBankFilename,
+                System.IO.FileMode.Open);
+            byte[] buf = new byte[8];
+            mFS.BeginRead(buf, 0, buf.Length, delegate(IAsyncResult result)
+            {
+                int bytesRead;
+                try
+                {
+                    bytesRead = mFS.EndRead(result);
+                }
+                catch (System.IO.FileNotFoundException)
+                {
+                    mFS.Close();
+                    mFS = null;
+                    return;
+                }
+                Debug.Assert(bytesRead == 8, "Didn't read 8 bytes");
+                System.IO.BinaryReader reader = new System.IO.BinaryReader(
+                    new System.IO.MemoryStream(buf, false));
+                int version = reader.ReadInt32();
+                // anything else would be uncivilized -- run oggAct to correct this error
+                if (version != OWB_VERSION)
+                {
+                    mFS.Close();
+                    mFS = null;
+                    return;
+                }
+                Debug.Assert(version == OWB_VERSION, "rebuild your wave bank with oggact");
+                int count = reader.ReadInt32();
+
+                int sizeHeaderLength = 8 * count;
+                byte[] buf2 = new byte[sizeHeaderLength];
+                mFS.BeginRead(buf2, 0, buf2.Length, delegate(IAsyncResult result2)
+                {
+                    int bytesRead2 = mFS.EndRead(result2);
+                    Debug.Assert(bytesRead2 == buf2.Length,
+                        String.Format("{0} != {1}", buf2.Length, bytesRead2));
+                    System.IO.BinaryReader reader2 = new System.IO.BinaryReader(
+                        new System.IO.MemoryStream(buf2, false));
+                    mSizes = new long[count];
+                    for (int i = 0; i < count; i++)
+                    {
+                        mSizes[i] = reader2.ReadInt64();
+                    }
+
+                    mSoundReadIdx = 0;
+                    mSounds = new SoundData[count];
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        // hard coded constant in Sound.cs, change it if you change the max size
+                        Debug.Assert(mSizes[i] <= 5570141, "mSizes[i] <= 5570141");
+                        mSounds[i] = new SoundData(i, mSizes[i], streamToPersist);
+                    }
+
+                    mIsLoaded = true;
+                    mFS.Close();
+                    mFS = null;
+                }, null);
+            }, null);
+#endif
+        }
+        */
+
+        public bool IsDisposed
+        {
+            get { return IsDisposed; }
+        }
+
+        public bool IsInUse
+        {
+            get { return IsInUse; }
+        }
+
+        public bool IsPrepared
+        {
+            get { return IsPrepared; }
+        }
+
+        public void Dispose()
+        {
+            if (mSounds != null)
+            {
+                for (uint i = 0; i < mSounds.Length; i++)
+                {
+                    mSounds[i].Dispose();
+                    mSounds[i] = null;
+                }
+            }
+            mSounds = null;
+
+            mAudioEngine.Wavebanks.Remove(this);
+        }
+
+        // release our hooks so that we might build a better fmod environment
+        public void releaseAll()
+        {
+            if (mSounds != null)
+            {
+                for (uint i = 0; i < mSounds.Length; i++)
+                {
+                    mSounds[i].releaseSound();
+                }
+            }
+        }
+
+        public void Dispose(Boolean disposing)
+        {
+        	throw new NotImplementedException();
+        }
+
     }
 }
 

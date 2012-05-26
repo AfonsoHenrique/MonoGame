@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Microsoft.Xna.Framework.Audio
 {
-    public class AudioCategory : IEquatable<AudioCategory>
+    public class AudioCategory
     {
         public string mName;
         //bool mBackgroundMusic;
@@ -32,6 +32,22 @@ namespace Microsoft.Xna.Framework.Audio
             double attenuation_in_db = volume / 100.0f;
             float gain = (float)Math.Pow(10, attenuation_in_db / 20.0);
             mVolume = gain;
+        }
+
+        public void AddPlaying(SoundHelperInstance s)
+        {
+            /*
+            instances.Remove(s);
+            if (instances.Count > mMaxInstances)
+            {
+                Update();
+                if (instances.Count > mMaxInstances)
+                {
+                    instances[0].Stop();
+                }
+            }
+            instances.Add(s);
+             */
         }
 
         /*
@@ -62,13 +78,5 @@ namespace Microsoft.Xna.Framework.Audio
                 return mVolume;
             }
         }
-		
-		#region IEquatable<AudioCategory> Members
-        public bool Equals(AudioCategory other)
-        {
-			return this.mName == other.mName;
-        }
-		#endregion
-
     }
 }

@@ -39,39 +39,17 @@
 // #endregion License
 // 
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Microsoft.Xna.Framework.Audio
 {
 	public class AudioListener
 	{
+        public Vector3 Position = Vector3.Zero; // GG TODO
+        public Vector3 Forward = Vector3.Forward; // GG TODO
+        public Vector3 Up = Vector3.Up; // GG TODO
+
 		public AudioListener ()
 		{
-			Forward = Vector3.Forward;
-			Position = Vector3.Zero;
-			Up = Vector3.Up;
-			Velocity = Vector3.Zero;
-		}
-		
-		public Vector3 Forward {
-			get;
-			set;
-		}
-
-		public Vector3 Position {
-			get;
-			set;
-		}
-
-		public Vector3 Up {
-			get;
-			set;
-		}
-
-		public Vector3 Velocity {
-			get;
-			set;
 		}
 	}
 }

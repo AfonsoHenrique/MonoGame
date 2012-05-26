@@ -316,7 +316,6 @@
     <Compile Include="Net\CommandGamerLeft.cs" />
     <Compile Include="Linux\TitleContainer.cs" />
     <Compile Include="Linux\Input\KeyboardUtil.cs" />
-    <Compile Include="Linux\Audio\AudioLoader.cs" />
     <Compile Include="Linux\GamerServices\MonoGameGamerServicesHelper.cs" />
     <Compile Include="Linux\Storage\StorageDeviceHelper.cs" />
     <Compile Include="Content\ContentManager.cs" />
@@ -326,8 +325,6 @@
     <Compile Include="Content\ContentReaders\CurveReader.cs" />
     <Compile Include="Input\GamePadType.cs" />
     <Compile Include="Graphics\Vertices\VertexElementColor.cs" />
-    <Compile Include="Audio\XactClip.cs" />
-    <Compile Include="Audio\XactSound.cs" />
     <Compile Include="Linux\Graphics\RenderTarget2D.cs" />
     <Compile Include="Desktop\Input\GamePad.cs" />
     <Compile Include="Desktop\Input\Mouse.cs" />
@@ -359,6 +356,7 @@
     <Compile Include="Linux\Graphics\Effect\BasicEffect.cs" />
     <Compile Include="Linux\Graphics\Effect\PSBasicEffect.cs" />
     <Compile Include="Linux\Graphics\Effect\VSBasicEffect.cs" />
+    <Compile Include="Linux\Audio\SoundHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ThirdParty\Lidgren.Network\Lidgren.Network.Linux.csproj">
