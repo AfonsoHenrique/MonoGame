@@ -9,6 +9,8 @@
     <OutputType>Library</OutputType>
     <RootNamespace>MonoGame.Framework.Linux</RootNamespace>
     <AssemblyName>MonoGame.Framework.Linux</AssemblyName>
+    <ReleaseVersion>2.5</ReleaseVersion>
+    <SynchReleaseVersion>false</SynchReleaseVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>
