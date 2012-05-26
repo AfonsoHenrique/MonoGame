@@ -55,7 +55,11 @@ namespace Microsoft.Xna.Framework
 		private GameTime _updateGameTime;
         private GameTime _drawGameTime;
         private DateTime _lastUpdate;
-		private DateTime _now;
+		private DateTime _lastDrawUpdate;
+		private TimeSpan _targetRate;
+		
+		private const int MAX_FRAMES = 5;
+		
         private bool _allowUserResizing;
 		private bool _transitiveAllowUserResizing;
         private DisplayOrientation _currentOrientation;
@@ -240,24 +244,32 @@ namespace Microsoft.Xna.Framework
 				window.WindowState = windowState;
 			
             if (Game != null) {
-                _drawGameTime.Update(_now - _lastUpdate);
-                _lastUpdate = _now;
-                Game.DoDraw(_drawGameTime);
+				DateTime now = DateTime.Now;
+                _drawGameTime.Update(now - _lastDrawUpdate);
+				_lastDrawUpdate = now;
+        		Game.DoDraw(_drawGameTime);
             }
 
             window.SwapBuffers();
         }
+		
+		private void OnUpdateFrame(object sender, FrameEventArgs e)
+		{
+			if (Game == null)
+				return;
+			
+			HandleInput();
+			
+			DateTime now = DateTime.Now;
+			var time = now - _lastUpdate;
+			_lastUpdate = now;
 
-        private void OnUpdateFrame(object sender, FrameEventArgs e)
-		{			
-			if (Game != null ) {
-			  
-                HandleInput();
+			if (_targetRate == TimeSpan.Zero)
+				_updateGameTime.Update(time);
+			else
+				_updateGameTime.Update(_targetRate);
 
-                _now = DateTime.Now;
-				_updateGameTime.Update(_now - _lastUpdate);
-            	Game.DoUpdate(_updateGameTime);
-			}
+			Game.DoUpdate(_updateGameTime);
 		}
 
         private void HandleInput()
@@ -297,6 +309,9 @@ namespace Microsoft.Xna.Framework
 
             // Initialize _lastUpdate
             _lastUpdate = DateTime.Now;
+			_lastDrawUpdate = DateTime.Now;
+			
+			_targetRate = TimeSpan.Zero;
 
             //Default no resizing
             AllowUserResizing = false;
@@ -309,6 +324,7 @@ namespace Microsoft.Xna.Framework
 		
 		internal void Run(double updateRate)
 		{
+			_targetRate = TimeSpan.FromSeconds(1 / updateRate);
 			window.Run(updateRate);
 		}
 		
