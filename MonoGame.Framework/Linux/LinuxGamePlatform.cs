@@ -170,14 +170,17 @@ namespace Microsoft.Xna.Framework
 				parms.BackBufferHeight = (int)bounds.Height;
 				parms.BackBufferWidth = (int)bounds.Width;
 			}
-
+			
+			// Set VSync
+			Window.Window.VSync = graphicsDeviceManager.SynchronizeWithVerticalRetrace ? OpenTK.VSyncMode.On : OpenTK.VSyncMode.Off;
+			
             IsActive = wasActive;
         }
 
         public override void BeginScreenDeviceChange(bool willBeFullScreen)
         {
-            
-        }
+
+		}
 
         public override void EndScreenDeviceChange(string screenDeviceName, int clientWidth, int clientHeight)
         {
