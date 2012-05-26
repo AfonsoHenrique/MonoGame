@@ -363,6 +363,10 @@
       <Project>{AE483C29-042E-4226-BA52-D247CE7676DA}</Project>
       <Name>Lidgren.Network.Linux</Name>
     </ProjectReference>
+    <ProjectReference Include="..\ThirdParty\FMOD\FMOD.Linux.csproj">
+      <Project>{1D5BBF90-8586-4F72-9E30-BEC1D70B47AE}</Project>
+      <Name>FMOD.Linux</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Linux\Graphics\States\" />
