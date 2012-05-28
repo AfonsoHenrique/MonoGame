@@ -1703,7 +1703,7 @@ namespace FMOD
                  * 3. download the win64 fmod release
                  * 4. copy the fmodex64.dll to the location of the .exe file for your application */
 
-                return RESULT.ERR_FILE_BAD;
+                //return RESULT.ERR_FILE_BAD;
             }
 #endif
 
