@@ -18,7 +18,7 @@ namespace FMOD
     */
     public class VERSION
     {
-        public const int    number = 0x00043601;
+        public const int    number = 0x00043621;
 #if WIN64
         public const string dll    = "fmodex64";
 #elif MONOMAC
