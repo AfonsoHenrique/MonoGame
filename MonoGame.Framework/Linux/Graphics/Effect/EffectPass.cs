@@ -40,35 +40,14 @@ namespace Microsoft.Xna.Framework.Graphics
 			if ( FragmentIndex < _technique._effect.fragmentShaders.Count)			
 				GL.AttachShader (shaderProgram, _technique._effect.fragmentShaders[FragmentIndex]);
 			
-			// Choose the appropriate shader4 GL call based on the available extensions
-			var extensions = new HashSet<string>(GL.GetString(StringName.Extensions).Split(new char[] { ' ' }));
-			// Set the parameters
-			if (extensions.Contains("GL_EXT_geometry_shader4"))
-			{
-				GL.Ext.ProgramParameter (shaderProgram, ExtGeometryShader4.GeometryInputTypeExt, (int)All.Lines);
-				GL.Ext.ProgramParameter (shaderProgram, ExtGeometryShader4.GeometryOutputTypeExt, (int)All.Line);
-			}
-			else if (extensions.Contains("GL_ARB_geometry_shader4"))
-			{
-				GL.Arb.ProgramParameter (shaderProgram, ArbGeometryShader4.GeometryInputTypeArb, (int)All.Lines);	
-				GL.Arb.ProgramParameter (shaderProgram, ArbGeometryShader4.GeometryOutputTypeArb, (int)All.Line);				
-			}
-			else
-			{
-				GL.ProgramParameter (shaderProgram, Version32.GeometryInputType, (int)All.Lines);
-				GL.ProgramParameter (shaderProgram, Version32.GeometryOutputType, (int)All.Line);
-			}
+			GL.ProgramParameter (shaderProgram, AssemblyProgramParameterArb.GeometryInputType, (int)All.Lines);
+			GL.ProgramParameter (shaderProgram, AssemblyProgramParameterArb.GeometryOutputType, (int)All.Line);
 
 			// Set the max vertices
 			int maxVertices;
 			GL.GetInteger (GetPName.MaxGeometryOutputVertices, out maxVertices);
 			
-			if (extensions.Contains("GL_EXT_geometry_shader4"))
-				GL.Ext.ProgramParameter (shaderProgram, ExtGeometryShader4.MaxGeometryOutputVerticesExt, maxVertices);
-			else if (extensions.Contains("GL_ARB_geometry_shader4"))
-				GL.Arb.ProgramParameter (shaderProgram, ArbGeometryShader4.GeometryVerticesOutArb, maxVertices);
-			else
-				GL.ProgramParameter (shaderProgram, Version32.GeometryVerticesOut, maxVertices);
+			GL.ProgramParameter (shaderProgram, AssemblyProgramParameterArb.GeometryVerticesOut, maxVertices);
 
 			// Link the program
 			GL.LinkProgram (shaderProgram);
@@ -99,35 +78,15 @@ namespace Microsoft.Xna.Framework.Graphics
 			if ( fragment > 0)
 				GL.AttachShader (shaderProgram, fragment);
 
-			// Choose the appropriate shader4 GL call based on the available extensions
-			var extensions = new HashSet<string>(GL.GetString(StringName.Extensions).Split(new char[] { ' ' }));
 			// Set the parameters
-			if (extensions.Contains("GL_EXT_geometry_shader4"))
-			{
-				GL.Ext.ProgramParameter (shaderProgram, ExtGeometryShader4.GeometryInputTypeExt, (int)All.Lines);
-				GL.Ext.ProgramParameter (shaderProgram, ExtGeometryShader4.GeometryOutputTypeExt, (int)All.Line);
-			}
-			else if (extensions.Contains("GL_ARB_geometry_shader4"))
-			{
-				GL.Arb.ProgramParameter (shaderProgram, ArbGeometryShader4.GeometryInputTypeArb, (int)All.Lines);	
-				GL.Arb.ProgramParameter (shaderProgram, ArbGeometryShader4.GeometryOutputTypeArb, (int)All.Line);				
-			}
-			else
-			{
-				GL.ProgramParameter (shaderProgram, Version32.GeometryInputType, (int)All.Lines);
-				GL.ProgramParameter (shaderProgram, Version32.GeometryOutputType, (int)All.Line);
-			}
+			GL.ProgramParameter (shaderProgram, AssemblyProgramParameterArb.GeometryInputType, (int)All.Lines);
+			GL.ProgramParameter (shaderProgram, AssemblyProgramParameterArb.GeometryOutputType, (int)All.Line);
 
 			// Set the max vertices
 			int maxVertices;
 			GL.GetInteger (GetPName.MaxGeometryOutputVertices, out maxVertices);
 
-			if (extensions.Contains("GL_EXT_geometry_shader4"))
-				GL.Ext.ProgramParameter (shaderProgram, ExtGeometryShader4.MaxGeometryOutputVerticesExt, maxVertices);
-			else if (extensions.Contains("GL_ARB_geometry_shader4"))
-				GL.Arb.ProgramParameter (shaderProgram, ArbGeometryShader4.GeometryVerticesOutArb, maxVertices);
-			else
-				GL.ProgramParameter (shaderProgram, Version32.GeometryVerticesOut, maxVertices);
+			GL.ProgramParameter (shaderProgram, AssemblyProgramParameterArb.GeometryVerticesOut, maxVertices);
 
 			// Link the program
 			GL.LinkProgram (shaderProgram);

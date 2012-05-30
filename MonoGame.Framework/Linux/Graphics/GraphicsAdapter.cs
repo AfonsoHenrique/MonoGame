@@ -84,11 +84,21 @@ namespace Microsoft.Xna.Framework.Graphics
 
 				if (adapters == null)
 				{
-					GraphicsAdapter[] tmpAdapters = new GraphicsAdapter[DisplayDevice.AvailableDisplays.Count];
-					
-					for (int i = 0; i< DisplayDevice.AvailableDisplays.Count; i++) 
+					List<DisplayDevice> list = new List<DisplayDevice> ();
+					for (int i = 0; i < 6; i++)
 					{
-                        tmpAdapters[i] = new GraphicsAdapter(DisplayDevice.AvailableDisplays[i]);
+						DisplayDevice display = DisplayDevice.GetDisplay ((DisplayIndex)i);
+						if (display != null)
+						{
+							list.Add (display);
+						}
+					}
+					
+					GraphicsAdapter[] tmpAdapters = new GraphicsAdapter[list.Count];
+					
+					for (int i = 0; i< list.Count; i++) 
+					{
+                        tmpAdapters[i] = new GraphicsAdapter(list[i]);
                     }
 					
 					adapters = new ReadOnlyCollection<GraphicsAdapter>(tmpAdapters);
