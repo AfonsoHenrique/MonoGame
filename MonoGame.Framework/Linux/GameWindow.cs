@@ -315,6 +315,8 @@ namespace Microsoft.Xna.Framework
 
             //Default no resizing
             AllowUserResizing = false;
+			
+			window.CursorVisible = false;
         }
 		
 		protected void SetTitle(string title)
