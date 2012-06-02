@@ -10,6 +10,7 @@ namespace Microsoft.Xna.Framework.Graphics
     {
         EffectTechnique _technique = null;
 		internal int shaderProgram;
+		int glExt = 0;
 		
 		
 		public void Apply ()
@@ -25,7 +26,21 @@ namespace Microsoft.Xna.Framework.Graphics
         public EffectPass(EffectTechnique technique)
         {
             _technique = technique;
-		
+			// Choose the appropriate shader4 GL call based on the available extensions
+			var extensions = new HashSet<string>(GL.GetString(StringName.Extensions).Split(new char[] { ' ' }));
+			
+			if (extensions.Contains("GL_EXT_geometry_shader4"))
+			{
+				glExt = 1;
+			}
+			else if (extensions.Contains("GL_ARB_geometry_shader4"))
+			{
+				glExt = 2;
+			}
+			else
+			{
+				glExt = 0;
+			}
         }
 		
 		internal void ApplyPass ()
@@ -40,14 +55,33 @@ namespace Microsoft.Xna.Framework.Graphics
 			if ( FragmentIndex < _technique._effect.fragmentShaders.Count)			
 				GL.AttachShader (shaderProgram, _technique._effect.fragmentShaders[FragmentIndex]);
 			
-			GL.ProgramParameter (shaderProgram, AssemblyProgramParameterArb.GeometryInputType, (int)All.Lines);
-			GL.ProgramParameter (shaderProgram, AssemblyProgramParameterArb.GeometryOutputType, (int)All.Line);
+			// Set the parameters
+			if (glExt == 1)
+			{
+				GL.Ext.ProgramParameter (shaderProgram, ExtGeometryShader4.GeometryInputTypeExt, (int)All.Lines);
+				GL.Ext.ProgramParameter (shaderProgram, ExtGeometryShader4.GeometryOutputTypeExt, (int)All.Line);
+			}
+			else if (glExt == 2)
+			{
+				GL.Arb.ProgramParameter (shaderProgram, ArbGeometryShader4.GeometryInputTypeArb, (int)All.Lines);	
+				GL.Arb.ProgramParameter (shaderProgram, ArbGeometryShader4.GeometryOutputTypeArb, (int)All.Line);				
+			}
+			else
+			{
+				GL.ProgramParameter (shaderProgram, AssemblyProgramParameterArb.GeometryInputType, (int)All.Lines);
+				GL.ProgramParameter (shaderProgram, AssemblyProgramParameterArb.GeometryOutputType, (int)All.Line);
+			}
 
 			// Set the max vertices
 			int maxVertices;
 			GL.GetInteger (GetPName.MaxGeometryOutputVertices, out maxVertices);
 			
-			GL.ProgramParameter (shaderProgram, AssemblyProgramParameterArb.GeometryVerticesOut, maxVertices);
+			if (glExt == 1)
+				GL.Ext.ProgramParameter (shaderProgram, ExtGeometryShader4.MaxGeometryOutputVerticesExt, maxVertices);
+			else if (glExt == 2)
+				GL.Arb.ProgramParameter (shaderProgram, ArbGeometryShader4.GeometryVerticesOutArb, maxVertices);
+			else
+				GL.ProgramParameter (shaderProgram, AssemblyProgramParameterArb.GeometryVerticesOut, maxVertices);
 
 			// Link the program
 			GL.LinkProgram (shaderProgram);
@@ -79,14 +113,32 @@ namespace Microsoft.Xna.Framework.Graphics
 				GL.AttachShader (shaderProgram, fragment);
 
 			// Set the parameters
-			GL.ProgramParameter (shaderProgram, AssemblyProgramParameterArb.GeometryInputType, (int)All.Lines);
-			GL.ProgramParameter (shaderProgram, AssemblyProgramParameterArb.GeometryOutputType, (int)All.Line);
+			if (glExt == 1)
+			{
+				GL.Ext.ProgramParameter (shaderProgram, ExtGeometryShader4.GeometryInputTypeExt, (int)All.Lines);
+				GL.Ext.ProgramParameter (shaderProgram, ExtGeometryShader4.GeometryOutputTypeExt, (int)All.Line);
+			}
+			else if (glExt == 2)
+			{
+				GL.Arb.ProgramParameter (shaderProgram, ArbGeometryShader4.GeometryInputTypeArb, (int)All.Lines);	
+				GL.Arb.ProgramParameter (shaderProgram, ArbGeometryShader4.GeometryOutputTypeArb, (int)All.Line);				
+			}
+			else
+			{
+				GL.ProgramParameter (shaderProgram, AssemblyProgramParameterArb.GeometryInputType, (int)All.Lines);
+				GL.ProgramParameter (shaderProgram, AssemblyProgramParameterArb.GeometryOutputType, (int)All.Line);
+			}
 
 			// Set the max vertices
 			int maxVertices;
 			GL.GetInteger (GetPName.MaxGeometryOutputVertices, out maxVertices);
 
-			GL.ProgramParameter (shaderProgram, AssemblyProgramParameterArb.GeometryVerticesOut, maxVertices);
+			if (glExt == 1)
+				GL.Ext.ProgramParameter (shaderProgram, ExtGeometryShader4.MaxGeometryOutputVerticesExt, maxVertices);
+			else if (glExt == 2)
+				GL.Arb.ProgramParameter (shaderProgram, ArbGeometryShader4.GeometryVerticesOutArb, maxVertices);
+			else
+				GL.ProgramParameter (shaderProgram, AssemblyProgramParameterArb.GeometryVerticesOut, maxVertices);
 
 			// Link the program
 			GL.LinkProgram (shaderProgram);
