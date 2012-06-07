@@ -544,15 +544,6 @@ namespace Microsoft.Xna.Framework
 			parms.BackBufferWidth = graphicsDeviceManager.PreferredBackBufferWidth; 
 			parms.BackBufferHeight = graphicsDeviceManager.PreferredBackBufferHeight; 
 			
-			frame = _mainWindow.Frame;
-			frame.Width = parms.BackBufferWidth;
-			frame.Height = parms.BackBufferHeight + TitleBarHeight();
-			
-			_gameWindow.OpenGLContext.CGLContext.CGLDisable( CGLContextEnable.kCGLCESurfaceBackingSize );
-		
-			_mainWindow.SetFrame (frame, true);
-			_mainWindow.Center();
-			
 			if (graphicsDeviceManager.IsFullScreen) 
 			{
 				frame = NSScreen.MainScreen.Frame;
@@ -568,14 +559,21 @@ namespace Microsoft.Xna.Framework
 					parms.BackBufferWidth,
 					parms.BackBufferHeight
 				};
-			
 				
 				_gameWindow.OpenGLContext.CGLContext.CGLSetParameter( CGLContextParameter.kCGLCPSurfaceBackingSize, dims );
 				_gameWindow.OpenGLContext.CGLContext.CGLEnable( CGLContextEnable.kCGLCESurfaceBackingSize );
-
-				_mainWindow.SetFrame (frame, true);
-				_mainWindow.Center();
 			} 
+			else 
+			{
+				frame = _mainWindow.Frame;
+				frame.Width = parms.BackBufferWidth;
+				frame.Height = parms.BackBufferHeight + TitleBarHeight();
+				
+				_gameWindow.OpenGLContext.CGLContext.CGLDisable( CGLContextEnable.kCGLCESurfaceBackingSize );
+			}
+			
+			_mainWindow.SetFrame (frame, true);
+			_mainWindow.Center();
 		}
 
 		internal void GoWindowed ()
