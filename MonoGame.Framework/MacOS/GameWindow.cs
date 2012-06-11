@@ -510,7 +510,7 @@ namespace Microsoft.Xna.Framework
 			//if ( !game.IsMouseVisible )
 			//	AddCursorRect(Frame, cursor);
 			//else
-			AddCursorRect(Frame, NSCursor.CurrentSystemCursor);
+			//AddCursorRect(Frame, NSCursor.ArrowCursor);
 			NSCursor.Hide();
 
 		}

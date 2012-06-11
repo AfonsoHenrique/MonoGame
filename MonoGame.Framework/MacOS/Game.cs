@@ -47,6 +47,7 @@ using MonoMac.CoreFoundation;
 using MonoMac.Foundation;
 using MonoMac.OpenGL;
 using MonoMac.AppKit;
+using MonoMac.ObjCRuntime;
 
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.GamerServices;
@@ -103,7 +104,7 @@ namespace Microsoft.Xna.Framework
 				Microsoft.Xna.Framework.Graphics.PresentationParameters._defaultBackBufferHeight);
 
 			//Create a window
-			_mainWindow = new MacGameNSWindow (frame, NSWindowStyle.Titled | NSWindowStyle.Closable, NSBackingStore.Buffered, true);
+			_mainWindow = new MacGameNSWindow (frame, NSWindowStyle.Titled | NSWindowStyle.Closable | NSWindowStyle.Borderless, NSBackingStore.Buffered, true);
 
 			// Perform any other window configuration you desire
 			_mainWindow.IsOpaque = true;
@@ -593,7 +594,8 @@ namespace Microsoft.Xna.Framework
 			string oldTitle = _gameWindow.Title;
 			
 			NSMenu.MenuBarVisible = true;
-			_mainWindow.StyleMask = NSWindowStyle.Titled | NSWindowStyle.Closable | NSWindowStyle.Miniaturizable;
+			if( _mainWindow.RespondsToSelector( new Selector( Selector.GetHandle( "setStyleMask:" ) ) ) )
+				_mainWindow.StyleMask = NSWindowStyle.Titled | NSWindowStyle.Closable | NSWindowStyle.Miniaturizable;
 
 			if (oldTitle != null)
 				_gameWindow.Title = oldTitle;
@@ -626,8 +628,9 @@ namespace Microsoft.Xna.Framework
 			string oldTitle = _gameWindow.Title;
 
 			NSMenu.MenuBarVisible = false;
-			_mainWindow.StyleMask = NSWindowStyle.Borderless;
-
+			if( _mainWindow.RespondsToSelector( new Selector( Selector.GetHandle( "setStyleMask:" ) ) ) )
+				_mainWindow.StyleMask = NSWindowStyle.Borderless;
+			
 			// Set the level here to normal
 			_mainWindow.Level = NSWindowLevel.Floating;
 
