@@ -80,6 +80,16 @@ namespace Microsoft.Xna.Framework
 
 		#endregion
 		
+		#region linux special properites
+
+		public System.Drawing.Icon Icon
+		{
+			get { return window.Icon; }
+			set { window.Icon = value; }
+		}
+		
+		#endregion
+		
 		#region Public Properties
 		
 		public IntPtr Handle
