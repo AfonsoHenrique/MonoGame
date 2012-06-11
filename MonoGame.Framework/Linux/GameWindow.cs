@@ -41,6 +41,7 @@ purpose and non-infringement.
 #region Using Statements
 using System;
 using System.ComponentModel;
+using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using OpenTK;
 using OpenTK.Graphics;
@@ -53,15 +54,11 @@ namespace Microsoft.Xna.Framework
     public class GameWindow : IDisposable
     {	
 		private GameTime _updateGameTime;
-        private GameTime _drawGameTime;
         private DateTime _lastUpdate;
-		private DateTime _lastDrawUpdate;
-		private TimeSpan _targetRate;
 		
 		private const int MAX_FRAMES = 5;
 		
         private bool _allowUserResizing;
-		private bool _transitiveAllowUserResizing;
         private DisplayOrientation _currentOrientation;
         private OpenTK.GameWindow window;
 
@@ -122,7 +119,7 @@ namespace Microsoft.Xna.Framework
             get { return _allowUserResizing; }
             set
             {
-                _allowUserResizing = _transitiveAllowUserResizing = value;
+                _allowUserResizing = value;
                 if (_allowUserResizing)
                     window.WindowBorder = WindowBorder.Resizable;
                 else 
@@ -210,11 +207,25 @@ namespace Microsoft.Xna.Framework
 		
         private void OnResize(object sender, EventArgs e)
         {
+			var winWidth = window.ClientRectangle.Width;
+			var winHeight = window.ClientRectangle.Height;
+			var winRect = new Rectangle(0, 0, winWidth, winHeight);
+			
+			// If window size is zero, leave bounds unchanged
+			if (winWidth == 0 || winHeight == 0)
+				return;
+
 			var manager = Game.Services.GetService(typeof(IGraphicsDeviceManager)) as GraphicsDeviceManager;
 			if (Game.Initialized)
 				manager.OnDeviceResetting(EventArgs.Empty);
+			
+			ChangeClientBounds(winRect);
 
-            Game.GraphicsDevice.SizeChanged(window.ClientRectangle.Width, window.ClientRectangle.Height);
+			Game.GraphicsDevice.Viewport = new Viewport(0, 0, winWidth, winHeight);
+			
+			Game.GraphicsDevice.PresentationParameters.BackBufferWidth = winWidth;
+			Game.GraphicsDevice.PresentationParameters.BackBufferHeight = winHeight;
+
             OnClientSizeChanged();
 
 			if (Game.Initialized)
@@ -230,56 +241,33 @@ namespace Microsoft.Xna.Framework
             if (!GraphicsContext.CurrentContext.IsCurrent)
                 window.MakeCurrent();
 			
+			UpdateWindowState();
+		}
+		
+		private void UpdateWindowState()
+		{
 			// we should wait until window's not fullscreen to resize
 			if (updateClientBounds && window.WindowState == WindowState.Normal)
 			{
-				// it seems, at least on linux, we can't resize if we disallow user resizing			
-				// make next state the current state
-				_transitiveAllowUserResizing = AllowUserResizing;
-				// allow resize to resize window
-				window.WindowBorder = WindowBorder.Resizable;
-				
 				window.ClientRectangle = new System.Drawing.Rectangle(clientBounds.X,
 				                     clientBounds.Y, clientBounds.Width, clientBounds.Height);
 				
 				updateClientBounds = false;
 			}
-			else if (_transitiveAllowUserResizing != _allowUserResizing)
-			{
-				// reset previous value
-				AllowUserResizing = _transitiveAllowUserResizing;
-			}
 			
 			if (window.WindowState != windowState)
 				window.WindowState = windowState;
-			
-            if (Game != null) {
-				DateTime now = DateTime.Now;
-                _drawGameTime.Update(now - _lastDrawUpdate);
-				_lastDrawUpdate = now;
-        		Game.DoDraw(_drawGameTime);
-            }
-
-            window.SwapBuffers();
-        }
+		}
 		
 		private void OnUpdateFrame(object sender, FrameEventArgs e)
 		{
-			if (Game == null)
-				return;
-			
-			HandleInput();
-			
-			DateTime now = DateTime.Now;
-			var time = now - _lastUpdate;
-			_lastUpdate = now;
+			UpdateWindowState();
 
-			if (_targetRate == TimeSpan.Zero)
-				_updateGameTime.Update(time);
-			else
-				_updateGameTime.Update(_targetRate);
-
-			Game.DoUpdate(_updateGameTime);
+            if (Game != null)
+            {
+				HandleInput();
+				Game.Tick();
+			}
 		}
 
         private void HandleInput()
@@ -315,14 +303,10 @@ namespace Microsoft.Xna.Framework
 			
             // Initialize GameTime
             _updateGameTime = new GameTime();
-            _drawGameTime = new GameTime();
 
             // Initialize _lastUpdate
             _lastUpdate = DateTime.Now;
-			_lastDrawUpdate = DateTime.Now;
 			
-			_targetRate = TimeSpan.Zero;
-
             //Default no resizing
             AllowUserResizing = false;
 			
@@ -336,7 +320,6 @@ namespace Microsoft.Xna.Framework
 		
 		internal void Run(double updateRate)
 		{
-			_targetRate = TimeSpan.FromSeconds(1 / updateRate);
 			window.Run(updateRate);
 		}
 		
@@ -350,10 +333,6 @@ namespace Microsoft.Xna.Framework
 		
 		internal void ChangeClientBounds(Rectangle clientBounds)
 		{	
-			Window.ClientRectangle = new System.Drawing.Rectangle(
-				clientBounds.X, clientBounds.Y,
-				clientBounds.Width, clientBounds.Height);
-			
 			updateClientBounds = true;			
 			this.clientBounds = clientBounds;
 		}

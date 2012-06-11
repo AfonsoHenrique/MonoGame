@@ -123,14 +123,6 @@ namespace Microsoft.Xna.Framework.Graphics
 			//_renderState = new RenderState ();
 			RasterizerState = new RasterizerState();
 		}
-		
-		internal void SizeChanged(int width, int height)
-        {
-            _viewport.X = 0;
-            _viewport.Y = 0;
-            _viewport.Width = width;
-            _viewport.Height = height;
-        }
 
 		public BlendState BlendState {
 			get { return _blendState; }

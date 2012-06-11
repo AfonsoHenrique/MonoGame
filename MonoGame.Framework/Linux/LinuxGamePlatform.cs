@@ -120,10 +120,12 @@ namespace Microsoft.Xna.Framework
 
         public override void EnterFullScreen()
         {
+			ResetWindowBounds(false);
         }
 
         public override void ExitFullScreen()
         {
+			ResetWindowBounds(false);
         }
 
         internal void ResetWindowBounds(bool toggleFullScreen)
@@ -157,10 +159,6 @@ namespace Microsoft.Xna.Framework
             if (toggleFullScreen)
                 Window.ToggleFullScreen();
 
-            // we only change window bounds if we are not fullscreen
-            if (!graphicsDeviceManager.IsFullScreen)
-                Window.ChangeClientBounds(bounds);
-			
 			// Now we set our Presentation Parameters
 			var device = graphicsDeviceManager.GraphicsDevice;
 			if (device != null)
@@ -170,6 +168,10 @@ namespace Microsoft.Xna.Framework
 				parms.BackBufferWidth = (int)bounds.Width;
 			}
 			
+            // we only change window bounds if we are not fullscreen
+            if (!graphicsDeviceManager.IsFullScreen)
+                Window.ChangeClientBounds(bounds);
+
 			// Set VSync
 			Window.Window.VSync = graphicsDeviceManager.SynchronizeWithVerticalRetrace ? OpenTK.VSyncMode.On : OpenTK.VSyncMode.Off;
 			
@@ -185,5 +187,18 @@ namespace Microsoft.Xna.Framework
         {
             
         }
+		
+		public override void Present()
+		{
+			base.Present();
+		
+			Window.Window.SwapBuffers();
+		}
+		
+		protected override void Dispose(bool disposing)
+		{
+			Window.Dispose();
+			base.Dispose(disposing);
+		}
     }
 }
