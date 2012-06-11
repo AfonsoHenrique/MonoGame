@@ -260,7 +260,8 @@ namespace Microsoft.Xna.Framework
 			else
 				numUpdates = DoUpdate( time, _targetRate, MAX_FRAMES );
 			
-			_shouldRender = (numUpdates >= 1);
+			//_shouldRender = (numUpdates >= 1);
+			_shouldRender = true;
 		}
 
 		protected override void OnVisibleChanged (EventArgs e)
