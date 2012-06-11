@@ -304,7 +304,7 @@ namespace Microsoft.Xna.Framework.Graphics
 
             GL.GetProgram(obj, ProgramParameter.ActiveUniforms, out actUnis);
 
-            Console.WriteLine("{0} {1}", whichObj, actUnis);
+//            Console.WriteLine("{0} {1}", whichObj, actUnis);
 
             int size;
             ActiveUniformType type;
@@ -321,7 +321,7 @@ namespace Microsoft.Xna.Framework.Graphics
 				userIndex = GetUniformUserIndex(uniformName);
 				uniformLocation = GL.GetUniformLocation(obj, uniformName);
 
-                Console.WriteLine("{0}: {1} {2} {3} {4}", uniformLocation, uniformName, type, length, size);
+//                Console.WriteLine("{0}: {1} {2} {3} {4}", uniformLocation, uniformName, type, length, size);
 				EffectParameter efp = new EffectParameter (this, uniformName, uniformLocation, userIndex, uniformLocation,
 				                                          type.ToString (), length, size);
                 Parameters._parameters.Add(efp.Name, efp);

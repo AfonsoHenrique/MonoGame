@@ -156,6 +156,7 @@ namespace Microsoft.Xna.Framework.Graphics
 		// Output the log of an object
 		private void ShaderLog (string whichObj, int obj)
 		{
+			return; // disable shader logging
 			int infoLogLen = 0;
 			var infoLog = "Is good to go.";
 
