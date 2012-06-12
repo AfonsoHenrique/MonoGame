@@ -144,7 +144,7 @@ namespace Microsoft.Xna.Framework
 		
         public GameWindow() 
         {
-            Initialize();
+            //Initialize();
         }        
 
 		#region Restricted Methods
@@ -241,12 +241,11 @@ namespace Microsoft.Xna.Framework
 			UpdateWindowState();
 		}
 		
-		private void UpdateWindowState()
+		internal void UpdateWindowState(bool forceFull = false)
 		{
 			// we should wait until window's not fullscreen to resize
 			if (updateClientBounds && window.WindowState == WindowState.Normal)
-			{
-				window.ClientRectangle = new System.Drawing.Rectangle(clientBounds.X,
+			{				window.ClientRectangle = new System.Drawing.Rectangle(clientBounds.X,
 				                     clientBounds.Y, clientBounds.Width, clientBounds.Height);
 				
 				updateClientBounds = false;
@@ -277,9 +276,9 @@ namespace Microsoft.Xna.Framework
 		
 		#endregion
 
-		private void Initialize()
+		internal void Initialize(PresentationParameters pp)
         {	
-            window = new OpenTK.GameWindow();
+            window = new OpenTK.GameWindow(pp.BackBufferWidth, pp.BackBufferHeight);
             window.RenderFrame += OnRenderFrame;
             window.UpdateFrame += OnUpdateFrame;
             window.Closing += new EventHandler<CancelEventArgs>(OpenTkGameWindow_Closing);

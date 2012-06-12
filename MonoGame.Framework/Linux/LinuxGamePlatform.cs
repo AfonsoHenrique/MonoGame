@@ -99,7 +99,8 @@ namespace Microsoft.Xna.Framework
 
         public override void RunLoop()
         {
-            ResetWindowBounds(false);
+			Window.UpdateWindowState(true);
+//            ResetWindowBounds(false);
             Window.Run(1 / Game.TargetElapsedTime.TotalSeconds);
         }
 
@@ -120,12 +121,12 @@ namespace Microsoft.Xna.Framework
 
         public override void EnterFullScreen()
         {
-			ResetWindowBounds(false);
+			//ResetWindowBounds(false);
         }
 
         public override void ExitFullScreen()
         {
-			ResetWindowBounds(false);
+			//ResetWindowBounds(false);
         }
 
         internal void ResetWindowBounds(bool toggleFullScreen)
@@ -158,6 +159,7 @@ namespace Microsoft.Xna.Framework
                 Window.ToggleFullScreen();
 			}
 
+            // we only change window bounds if we are not fullscreen
             if (!graphicsDeviceManager.IsFullScreen)
             {
                 bounds.Width = graphicsDeviceManager.PreferredBackBufferWidth;
@@ -166,9 +168,6 @@ namespace Microsoft.Xna.Framework
                 Window.ChangeClientBounds(bounds);
 			}
 			
-            // we only change window bounds if we are not fullscreen
-            if (!graphicsDeviceManager.IsFullScreen)
-
 			// Set VSync
 			Window.Window.VSync = graphicsDeviceManager.SynchronizeWithVerticalRetrace ? OpenTK.VSyncMode.On : OpenTK.VSyncMode.Off;
 			

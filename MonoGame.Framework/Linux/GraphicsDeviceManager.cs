@@ -52,6 +52,7 @@ namespace Microsoft.Xna.Framework
 		private int _preferredBackBufferHeight;
 		private int _preferredBackBufferWidth;
 		private bool _preferMultiSampling;
+		private bool _changedFullscreen;
 		private DisplayOrientation _supportedOrientations;
 
 		public GraphicsDeviceManager (Game game)
@@ -151,7 +152,8 @@ namespace Microsoft.Xna.Framework
 
 		public void ApplyChanges ()
 		{
-			_game.ResizeWindow(false);
+			_game.ResizeWindow(_changedFullscreen);
+			_changedFullscreen = false;
 		}
 
 		private void Initialize ()
@@ -163,8 +165,8 @@ namespace Microsoft.Xna.Framework
 			} else {
 				_graphicsDevice.PreferedFilter = All.Nearest;
 			}
-
-            ApplyChanges();
+			
+			_game.Window.Initialize(_graphicsDevice.PresentationParameters);
 		}
 
 		public void ToggleFullScreen ()
@@ -183,10 +185,8 @@ namespace Microsoft.Xna.Framework
 				return _graphicsDevice.PresentationParameters.IsFullScreen;
 			}
 			set {
-				bool changed = value != _graphicsDevice.PresentationParameters.IsFullScreen;
+				_changedFullscreen = value != _graphicsDevice.PresentationParameters.IsFullScreen;
 				_graphicsDevice.PresentationParameters.IsFullScreen = value;	
-
-				_game.ResizeWindow(changed);
 			}
 		}
 
