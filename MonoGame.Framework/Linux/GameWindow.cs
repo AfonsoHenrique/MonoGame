@@ -53,9 +53,6 @@ namespace Microsoft.Xna.Framework
 {
     public class GameWindow : IDisposable
     {	
-		private GameTime _updateGameTime;
-        private DateTime _lastUpdate;
-		
 		private const int MAX_FRAMES = 5;
 		
         private bool _allowUserResizing;
@@ -300,14 +297,8 @@ namespace Microsoft.Xna.Framework
 			// mouse
 			// TODO review this when opentk 1.1 is released
 			Mouse.UpdateMouseInfo(window.Mouse);
-			
-            // Initialize GameTime
-            _updateGameTime = new GameTime();
 
-            // Initialize _lastUpdate
-            _lastUpdate = DateTime.Now;
-			
-            //Default no resizing
+			//Default no resizing
             AllowUserResizing = false;
 			
 			window.CursorVisible = false;
