@@ -144,33 +144,30 @@ namespace Microsoft.Xna.Framework
             var graphicsDeviceManager = (GraphicsDeviceManager)
                 Game.Services.GetService(typeof(IGraphicsDeviceManager));
 
-            if (graphicsDeviceManager.IsFullScreen)
-            {
-                bounds = new Rectangle(0, 0,
-                                       OpenTK.DisplayDevice.Default.Width,
-                                       OpenTK.DisplayDevice.Default.Height);
-            }
-            else
+			if (toggleFullScreen)
+			{
+//				if (graphicsDeviceManager.IsFullScreen) {
+//					OpenTK.DisplayDevice.Default.ChangeResolution(
+//						graphicsDeviceManager.PreferredBackBufferWidth,
+//						graphicsDeviceManager.PreferredBackBufferHeight,
+//						OpenTK.DisplayDevice.Default.BitsPerPixel,
+//						0);
+//				} else {
+//					OpenTK.DisplayDevice.Default.RestoreResolution();
+//				}
+                Window.ToggleFullScreen();
+			}
+
+            if (!graphicsDeviceManager.IsFullScreen)
             {
                 bounds.Width = graphicsDeviceManager.PreferredBackBufferWidth;
                 bounds.Height = graphicsDeviceManager.PreferredBackBufferHeight;
-            }
 
-            if (toggleFullScreen)
-                Window.ToggleFullScreen();
-
-			// Now we set our Presentation Parameters
-			var device = graphicsDeviceManager.GraphicsDevice;
-			if (device != null)
-			{
-				PresentationParameters parms = device.PresentationParameters;
-				parms.BackBufferHeight = (int)bounds.Height;
-				parms.BackBufferWidth = (int)bounds.Width;
+                Window.ChangeClientBounds(bounds);
 			}
 			
             // we only change window bounds if we are not fullscreen
             if (!graphicsDeviceManager.IsFullScreen)
-                Window.ChangeClientBounds(bounds);
 
 			// Set VSync
 			Window.Window.VSync = graphicsDeviceManager.SynchronizeWithVerticalRetrace ? OpenTK.VSyncMode.On : OpenTK.VSyncMode.Off;
