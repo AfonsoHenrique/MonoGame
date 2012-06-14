@@ -129,7 +129,7 @@ namespace Microsoft.Xna.Framework
 			//ResetWindowBounds(false);
         }
 
-        internal void ResetWindowBounds(bool toggleFullScreen)
+        internal void ResetWindowBounds()
         {
             Rectangle bounds;
 
@@ -145,8 +145,6 @@ namespace Microsoft.Xna.Framework
             var graphicsDeviceManager = (GraphicsDeviceManager)
                 Game.Services.GetService(typeof(IGraphicsDeviceManager));
 
-			if (toggleFullScreen)
-			{
 //				if (graphicsDeviceManager.IsFullScreen) {
 //					OpenTK.DisplayDevice.Default.ChangeResolution(
 //						graphicsDeviceManager.PreferredBackBufferWidth,
@@ -156,8 +154,7 @@ namespace Microsoft.Xna.Framework
 //				} else {
 //					OpenTK.DisplayDevice.Default.RestoreResolution();
 //				}
-                Window.ToggleFullScreen();
-			}
+            Window.IsFullScreen = graphicsDeviceManager.IsFullScreen;
 
             // we only change window bounds if we are not fullscreen
             if (!graphicsDeviceManager.IsFullScreen)

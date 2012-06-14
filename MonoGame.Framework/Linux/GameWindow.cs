@@ -313,12 +313,15 @@ namespace Microsoft.Xna.Framework
 			window.Run(updateRate);
 		}
 		
-		internal void ToggleFullScreen()
+		internal bool IsFullScreen
 		{
-			if (windowState == WindowState.Fullscreen)
-				windowState = WindowState.Normal;
-			else
-				windowState = WindowState.Fullscreen;
+			get { return windowState == WindowState.Fullscreen; }
+			set {
+				if (value)
+					windowState = WindowState.Fullscreen;
+				else
+					windowState = WindowState.Normal;
+			}
 		}
 		
 		internal void ChangeClientBounds(Rectangle clientBounds)
