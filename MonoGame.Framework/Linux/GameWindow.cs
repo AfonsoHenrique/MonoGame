@@ -53,6 +53,12 @@ namespace Microsoft.Xna.Framework
 {
     public class GameWindow : IDisposable
     {	
+		private GameTime _updateGameTime;
+		private GameTime _drawGameTime;
+		private DateTime _lastUpdate;
+		private DateTime _lastDrawUpdate;
+		private TimeSpan _targetRate;
+		
 		private const int MAX_FRAMES = 5;
 		
         private bool _allowUserResizing;
@@ -239,6 +245,14 @@ namespace Microsoft.Xna.Framework
                 window.MakeCurrent();
 			
 			UpdateWindowState();
+
+			if (Game != null) {
+				DateTime now = DateTime.Now;
+                _drawGameTime.Update(now - _lastDrawUpdate);
+				_lastDrawUpdate = now;
+        		Game.DoDraw(_drawGameTime);
+				Game.Platform.Present();
+            }
 		}
 		
 		internal void UpdateWindowState(bool forceFull = false)
@@ -257,13 +271,21 @@ namespace Microsoft.Xna.Framework
 		
 		private void OnUpdateFrame(object sender, FrameEventArgs e)
 		{
-			UpdateWindowState();
+			if (Game == null)
+				return;
+			
+			HandleInput();
+			
+			DateTime now = DateTime.Now;
+			var time = now - _lastUpdate;
+			_lastUpdate = now;
 
-            if (Game != null)
-            {
-				HandleInput();
-				Game.Tick();
-			}
+			if (_targetRate == TimeSpan.Zero)
+				_updateGameTime.Update(time);
+			else
+				_updateGameTime.Update(_targetRate);
+
+			Game.DoUpdate(_updateGameTime);
 		}
 
         private void HandleInput()
@@ -296,6 +318,16 @@ namespace Microsoft.Xna.Framework
 			// mouse
 			// TODO review this when opentk 1.1 is released
 			Mouse.UpdateMouseInfo(window.Mouse);
+			
+			// Initialize GameTime
+			_updateGameTime = new GameTime();
+			_drawGameTime = new GameTime();
+
+			// Initialize _lastUpdate
+			_lastUpdate = DateTime.Now;
+			_lastDrawUpdate = DateTime.Now;
+			
+			_targetRate = TimeSpan.Zero;
 
 			//Default no resizing
             AllowUserResizing = false;
@@ -310,6 +342,7 @@ namespace Microsoft.Xna.Framework
 		
 		internal void Run(double updateRate)
 		{
+			_targetRate = TimeSpan.FromSeconds(1 / updateRate);
 			window.Run(updateRate);
 		}
 		
